@@ -116,6 +116,9 @@ How to run it:
    TF-IDF wrong, sibling branch, no commas, distractor, hard), type a record, or paste a test id.
 5. Without Gradio: `show(list(EXAMPLES)[k])` or `show(typed=(name, address, country, 'S2'))` in the
    cell before renders the same five panels in the notebook.
+6. The notebook automatically saves a self-contained fallback HTML file (`demo_fallback.html`) covering
+   the four curated demo records. See [`demo/README.md`](../demo/README.md) for the 5-minute presentation
+   script, report section, slide deck, and offline fallback HTML.
 
 ## Rough run times (T4, full `data/small`)
 

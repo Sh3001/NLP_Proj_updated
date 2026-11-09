@@ -987,6 +987,122 @@ def show(label=None, i=None, typed=None):
 show(list(EXAMPLES)[0])
 # show(typed=('Sri Lakshmi Traders', 'Shop No 4, MG Road, Kochi, Kerala 682035', 'India', 'S2'))
 
+# ==== Four curated demo records (Issue #15, Task 3) ====
+# Deterministic selection from EXAMPLES; groups come from pick_examples().
+# Falls back gracefully if a category has no examples in this dataset attachment.
+
+def pick_demo4():
+    'Return ordered dict {label: qi} for the four presentation records.'
+    hard_keys = [k for k in EXAMPLES if k.startswith('Hard')]
+    slots = [
+        ('Easy US Latin',      ['Easy · US, Latin script']),
+        ('Indic script',       ['Devanagari script', 'Malayalam script']),
+        ('Sibling/distractor', ['Sibling branch among the candidates',
+                                'No true match (distractor)']),
+        ('Failure case',       hard_keys if hard_keys else ['TF-IDF ranks the true S1 lower']),
+    ]
+    demo4 = {}; used = set()
+    for slot_name, groups in slots:
+        matched = False
+        for g in groups:
+            cands = [(k, v) for k, v in EXAMPLES.items() if k.startswith(g) and v not in used]
+            if cands:
+                label, qi = cands[0]
+                demo4[f'{slot_name}: {label}'] = qi
+                used.add(qi); matched = True; break
+        if not matched:
+            remaining = [(k, v) for k, v in EXAMPLES.items() if v not in used]
+            if remaining:
+                label, qi = remaining[0]
+                demo4[f'{slot_name} (fallback): {label}'] = qi; used.add(qi)
+    return demo4
+
+DEMO4 = pick_demo4()
+print('=== Four demo records ===')
+for idx, (label, qi) in enumerate(DEMO4.items(), 1):
+    r = REC.iloc[qi]
+    tid = TEST_OWNER.get(r.id)
+    tname = REC.name.values[ID2IX[tid]] if tid and tid in ID2IX.index else '(no true S1)'
+    print(f'[{idx}] {label}')
+    print(f'    name   : {r["name"]}')
+    print(f'    addr   : {r["addr"]}')
+    print(f'    country: {r["country"]} | script: {r["script"]} | src: {r["src"]} | qi: {qi}')
+    print(f'    truth  : {tname} ({tid})')
+    print()
+
+# Render all four records inline in the notebook
+for label, qi in DEMO4.items():
+    show(i=qi)
+
+# ==== Save fallback HTML for the four demo records (Issue #15, Task 5) ====
+import html as _html2
+_TITLES = ['', '1 · Normalise + tokenize', '2 · Parse the address',
+           '3 · Retrieve candidates', '4 · Score (every matcher)', '5 · Fuse (MoE) + decide']
+
+_status_rows = ''.join(
+    f'<tr><td>{_html2.escape(r["component"])}</td><td>{_html2.escape(r["runs as"])}</td></tr>'
+    for r in STATUS
+)
+_status_html = ('<table style="border-collapse:collapse;font-size:13px">'
+               '<tr><th style="border:1px solid #d0d7de;padding:4px 8px;background:#f6f8fa">component</th>'
+               '<th style="border:1px solid #d0d7de;padding:4px 8px;background:#f6f8fa">runs as</th></tr>'
+               + _status_rows + '</table>')
+
+_nav = ''.join(
+    f'<a href="#rec{i+1}" style="padding:7px 14px;background:#54A24B;color:#fff;'
+    f'border-radius:5px;text-decoration:none;font-weight:600">'
+    f'Record {i+1}: {_html2.escape(list(DEMO4)[i].split(":")[0])}</a> '
+    for i in range(len(DEMO4))
+)
+
+_parts_all = []
+for rec_num, (label, qi) in enumerate(DEMO4.items(), 1):
+    r = REC.iloc[qi]
+    tid = TEST_OWNER.get(r.id)
+    tname = (REC.name.values[ID2IX[tid]] if tid and tid in ID2IX.index else '(no true S1)')
+    meta = (f'<p style="margin:6px 0"><b>Name:</b> {_html2.escape(r["name"])} &nbsp;|&nbsp; '
+            f'<b>Addr:</b> {_html2.escape(r["addr"]) or "(empty)"} &nbsp;|&nbsp; '
+            f'<b>Country:</b> {_html2.escape(r["country"])} &nbsp;|&nbsp; '
+            f'<b>Script:</b> {_html2.escape(r["script"])} &nbsp;|&nbsp; '
+            f'<b>GT:</b> {_html2.escape(tname)}</p>')
+    panels = safe_render(i=qi)
+    sec_html = f'<section id="rec{rec_num}" style="margin-bottom:60px;border-top:2px solid #d0d7de;padding-top:20px">'
+    sec_html += f'<h2 style="color:#1f2328;border-left:4px solid #54A24B;padding-left:10px">Record {rec_num} – {_html2.escape(label)}</h2>'
+    sec_html += meta
+    for title, panel in zip(_TITLES, panels):
+        if title: sec_html += f'<h3 style="color:#1f2328">{_html2.escape(title)}</h3>'
+        sec_html += panel
+    sec_html += '</section>'
+    _parts_all.append(sec_html)
+
+_html_doc = (
+    '<!DOCTYPE html>\n<html lang="en"><head><meta charset="UTF-8">\n'
+    '<title>Entity Resolution Demo - Four Records (Issue #15 fallback)</title>\n'
+    '<style>\n'
+    'body{font-family:system-ui,-apple-system,sans-serif;max-width:1200px;margin:0 auto;padding:20px;background:#f8fafc;color:#1f2328}\n'
+    'h1{color:#1f2328;border-bottom:2px solid #d0d7de;padding-bottom:8px}\n'
+    + CSS + '\n'
+    '</style></head><body>\n'
+    '<h1>Business Entity Resolution - Demo: Four Records</h1>\n'
+    '<p>Fallback HTML for <a href="https://github.com/Sh3001/NLP_Proj_updated/issues/15">Issue #15</a>. '
+    f'Generated from the held-out test split with <code>QUICK_RUN={QUICK_RUN}</code>. '
+    'Opens in any browser without a live Gradio server.</p>\n'
+    '<h2 style="color:#1f2328">Model status at load time</h2>\n'
+    f'<div style="background:#f6f8fa;border:1px solid #d0d7de;border-radius:6px;padding:12px;margin-bottom:20px">'
+    f'<p><b>DEVICE:</b> {DEVICE}</p>{_status_html}</div>\n'
+    f'<div style="display:flex;gap:10px;flex-wrap:wrap;margin:16px 0">{_nav}</div>\n'
+    + ''.join(_parts_all) + '\n</body></html>'
+)
+
+_html_path = OUT / 'demo_fallback.html'
+_html_path.write_text(_html_doc, encoding='utf-8')
+print(f'Fallback HTML saved -> {_html_path}  ({_html_path.stat().st_size / 1024:.1f} kB)')
+try:
+    from IPython.display import FileLink, display as _ipy_display
+    _ipy_display(FileLink('demo_fallback.html'))
+except Exception:
+    pass
+
 # ==== Gradio app: click the public *.gradio.live link printed below ====
 try:
     import gradio as gr

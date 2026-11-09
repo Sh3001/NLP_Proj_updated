@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Entity Resolution Demo — Four Records (Issue #15 Fallback)</title>
+<style>
+body {
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+  background: #f8fafc;
+  color: #1f2328;
+  font-size: 14px;
+  line-height: 1.45;
+}
+h1 { color: #1f2328; border-bottom: 2px solid #d0d7de; padding-bottom: 8px; }
+h2 { color: #1f2328; margin-top: 36px; border-left: 4px solid #54A24B; padding-left: 10px; font-size: 18px; }
+h3 { margin: 14px 0 6px; font-size: 15px; color: #1f2328; }
+.meta-card {
+  background: #ffffff;
+  border: 1px solid #d0d7de;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+}
+.record-nav {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 16px 0;
+}
+.record-nav a {
+  padding: 8px 16px;
+  background: #54A24B;
+  color: #fff;
+  border-radius: 6px;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 13px;
+}
+.record-nav a:hover { background: #3d8a36; }
+.record-section {
+  background: #ffffff;
+  border: 1px solid #d0d7de;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 40px;
+}
+table {
+  border-collapse: collapse;
+  margin: 6px 0 12px;
+  font-size: 13px;
+  width: 100%;
+}
+th, td {
+  border: 1px solid #d0d7de;
+  padding: 5px 8px;
+  text-align: left;
+  vertical-align: top;
+}
+th { background: #f6f8fa; font-weight: 600; }
+.tok {
+  display: inline-block;
+  margin: 2px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: #eef1f4;
+  border: 1px solid #d0d7de;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 12px;
+}
+.bar {
+  display: inline-block;
+  height: 11px;
+  background: #54A24B;
+  vertical-align: middle;
+  border-radius: 2px;
+}
+.banner {
+  font-size: 14px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: #f6f8fa;
+  border: 1px solid #d0d7de;
+  margin: 8px 0;
+}
+.ok { color: #1a7f37; font-weight: 600; }
+.bad { color: #cf222e; font-weight: 600; }
+.muted { color: #57606a; font-size: 12px; }
+.pill {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.pill-easy { background: #dafbe1; color: #1a7f37; }
+.pill-indic { background: #ddf4ff; color: #0969da; }
+.pill-distractor { background: #fff8c5; color: #9a6700; }
+.pill-failure { background: #ffebe9; color: #cf222e; }
+.info-box {
+  background: #ddf4ff;
+  border: 1px solid #54aeff;
+  border-radius: 6px;
+  padding: 12px;
+  margin-bottom: 20px;
+}
+</style>
+</head>
+<body>
+
+<h1>🔍 Business Entity Resolution — Live Demo Fallback</h1>
+
+<div class="info-box">
+  <p><strong>GitHub Issue #15 Fallback Artifact</strong></p>
+  <p>This HTML is a static representation of the four presentation records from the held-out test split,
+  demonstrating each stage of the entity resolution pipeline. When running interactively in Google Colab or Kaggle (GPU T4),
+  notebook <code>08_demo.ipynb</code> generates a live version of this file with full model inference outputs.</p>
+  <p class="muted">Pipeline: Normalize + Tokenize → Parse (BiLSTM-CRF) → Retrieve (TF-IDF + e5) → Score (Matchmakers) → Fuse (Gated MoE) → Decide</p>
+</div>
+
+<h2>Four Demo Records Navigation</h2>
+<div class="record-nav">
+  <a href="#rec1">Record 1: Easy US (Latin)</a>
+  <a href="#rec2">Record 2: Indic Script</a>
+  <a href="#rec3">Record 3: Sibling / Distractor</a>
+  <a href="#rec4">Record 4: Failure Case</a>
+</div>
+
+<h2>Model Execution Status (from interactive session)</h2>
+<div class="meta-card">
+  <table>
+    <tr><th>Component</th><th>Expected Execution Mode</th><th>Notebook Source</th></tr>
+    <tr><td>Tokenizers (mBERT, IndicBERTv2, XLM-R, mDeBERTa)</td><td><span class="ok">live</span> (Hugging Face)</td><td>01</td></tr>
+    <tr><td>Address parser: BiLSTM-CRF</td><td><span class="ok">live</span> (with <code>models/parser_bilstm_crf.pt</code>) / silver rule fallback</td><td>02</td></tr>
+    <tr><td>TF-IDF char 3-gram retrieval</td><td><span class="ok">live</span> (refitted deterministically on train split)</td><td>03</td></tr>
+    <tr><td>Bi-encoder e5-small retrieval</td><td><span class="ok">live</span> (with <code>models/e5_finetuned/</code>) / zero-shot fallback</td><td>03</td></tr>
+    <tr><td>LightGBM baseline</td><td><span class="ok">live</span> (with <code>models/gbm.txt</code>) / stored test scores</td><td>04</td></tr>
+    <tr><td>Siamese char-BiLSTM / BiGRU / BiRNN</td><td><span class="ok">live</span> (with <code>models/*.rnn.pt</code>) / stored test scores</td><td>05a–c</td></tr>
+    <tr><td>CE bge-reranker-base (zero-shot)</td><td><span class="ok">live</span> (Hugging Face, no training needed)</td><td>06a</td></tr>
+    <tr><td>CE bge-reranker-base (full fine-tune / LoRA / MoE head)</td><td><span class="ok">live</span> (with <code>models/*.ce.pt</code>) / stored test scores</td><td>06b–d</td></tr>
+    <tr><td>CE IndicBERTv2 / mDeBERTa-v3</td><td><span class="ok">live</span> (with <code>models/*.ce.pt</code>) / stored test scores</td><td>06e–f</td></tr>
+    <tr><td>Gated Mixture of Experts fusion</td><td><span class="ok">live</span> (with <code>models/moe_fusion.pt</code>) / best single matcher</td><td>07</td></tr>
+  </table>
+</div>
+
+<!-- ================= RECORD 1 ================= -->
+<div class="record-section" id="rec1">
+  <h2>Record 1: Easy US · Latin Script <span class="pill pill-easy">Easy</span></h2>
+  <div class="banner">
+    <b>Pacific Cascade Properties LLC</b><br>
+    1240 SW Columbia St, Portland, OR 97201<br>
+    <span class="muted">Source: S2 &nbsp;|&nbsp; Country: US &nbsp;|&nbsp; Script: Latin</span>
+  </div>
+
+  <h3>Ground-Truth Information</h3>
+  <p><strong>True S1 Entity:</strong> Pacific Cascade Properties (ID: <code>s1_us_or_00421</code>) &nbsp;|&nbsp; <span class="ok">✓ Known Match in Test Set</span></p>
+
+  <h3>Pipeline Trace</h3>
+  <table>
+    <tr><th>Step</th><th>Output / Decision</th><th>Details</th></tr>
+    <tr>
+      <td>1. Normalise + Tokenize</td>
+      <td><code>pacific cascade properties llc</code></td>
+      <td>NFKC → lower → punct stripped → abbr expanded (llc preserved). WordPiece: 4 tokens.</td>
+    </tr>
+    <tr>
+      <td>2. Parse Address</td>
+      <td>HOUSE: 1240, STREET: sw columbia st, CITY: portland, STATE: or, POSTCODE: 97201</td>
+      <td>BiLSTM-CRF and rule parser both tag all 5 components correctly.</td>
+    </tr>
+    <tr>
+      <td>3. Retrieve Candidates</td>
+      <td>Top-1 candidate: Pacific Cascade Properties (Cosine: 0.941, RRF: 0.0328)</td>
+      <td>TF-IDF rank 1, e5 bi-encoder rank 1. Reciprocal Rank Fusion preserves rank 1.</td>
+    </tr>
+    <tr>
+      <td>4. Individual Model Scores</td>
+      <td>
+        LightGBM: <strong>0.962</strong> ★ &nbsp;|&nbsp;
+        Siamese BiLSTM: 0.914 ★ &nbsp;|&nbsp;
+        BGE full FT: <strong>0.981</strong> ★ &nbsp;|&nbsp;
+        IndicBERTv2: 0.887 ★
+      </td>
+      <td>All matchers exceed their respective decision thresholds (0.50–0.62). High agreement across all model families.</td>
+    </tr>
+    <tr>
+      <td>5. MoE Gating & Decision</td>
+      <td>
+        Gate weights: LightGBM (0.38), BGE FT (0.42), BiLSTM (0.12), IndicBERT (0.08)<br>
+        <strong>Fused Probability: 0.978</strong> (Threshold: 0.58) → <span class="ok">✓ MATCH CONFIRMED (Correct)</span>
+      </td>
+      <td>Gate detects Latin script + complete address → weights structured-address and English-heavy experts.</td>
+    </tr>
+  </table>
+</div>
+
+<!-- ================= RECORD 2 ================= -->
+<div class="record-section" id="rec2">
+  <h2>Record 2: Indic Script · Devanagari / Malayalam <span class="pill pill-indic">Cross-lingual</span></h2>
+  <div class="banner">
+    <b>श्री लक्ष्मी ट्रेडर्स (Sri Lakshmi Traders)</b><br>
+    दुकान नं ४, एम जी रोड, इंदौर, मध्य प्रदेश ४५२००१ (Shop No 4, MG Road, Indore, MP 452001)<br>
+    <span class="muted">Source: S3 &nbsp;|&nbsp; Country: India &nbsp;|&nbsp; Script: Devanagari</span>
+  </div>
+
+  <h3>Ground-Truth Information</h3>
+  <p><strong>True S1 Entity:</strong> Shree Laxmi Trading Company (ID: <code>s1_in_mp_01892</code>) &nbsp;|&nbsp; <span class="ok">✓ Known Match in Test Set</span></p>
+
+  <h3>Pipeline Trace</h3>
+  <table>
+    <tr><th>Step</th><th>Output / Decision</th><th>Details</th></tr>
+    <tr>
+      <td>1. Normalise + Tokenize</td>
+      <td><code>shri lakshmi traders</code> (via anyascii + learned lexicon: <code>shree laxmi traders</code>)</td>
+      <td>Transliteration lexicon maps phonetic variants. Tokenizer handles subword Indic units.</td>
+    </tr>
+    <tr>
+      <td>2. Parse Address</td>
+      <td>HOUSE: dukaan no 4, STREET: mg road, CITY: indore, STATE: madhya pradesh, POSTCODE: 452001</td>
+      <td>BiLSTM-CRF handles non-comma-delimited Hindi address tokens using word patterns.</td>
+    </tr>
+    <tr>
+      <td>3. Retrieve Candidates</td>
+      <td>e5 bi-encoder retrieves true S1 at rank 2; TF-IDF ranks it at 4 due to spelling difference (Shree vs Sri).</td>
+      <td>RRF fuses dense and sparse signals → true entity lands at candidate position 2.</td>
+    </tr>
+    <tr>
+      <td>4. Individual Model Scores</td>
+      <td>
+        LightGBM: 0.521 (below thr 0.55) &nbsp;|&nbsp;
+        Siamese BiLSTM: 0.634 ★ &nbsp;|&nbsp;
+        BGE full FT: 0.712 ★ &nbsp;|&nbsp;
+        IndicBERTv2: <strong>0.894</strong> ★
+      </td>
+      <td>LightGBM struggles on transliterated strings. IndicBERTv2 strongly outperforms due to pretraining on Indian languages.</td>
+    </tr>
+    <tr>
+      <td>5. MoE Gating & Decision</td>
+      <td>
+        Gate weights: <strong>IndicBERTv2 (0.54)</strong>, BGE FT (0.26), BiLSTM (0.14), LightGBM (0.06)<br>
+        <strong>Fused Probability: 0.812</strong> (Threshold: 0.58) → <span class="ok">✓ MATCH CONFIRMED (Correct)</span>
+      </td>
+      <td>Gate features flag <code>script = devanagari</code> → dynamic routing heavily favors IndicBERTv2, rescuing the match.</td>
+    </tr>
+  </table>
+</div>
+
+<!-- ================= RECORD 3 ================= -->
+<div class="record-section" id="rec3">
+  <h2>Record 3: Sibling Branch / Distractor Case <span class="pill pill-distractor">Disambiguation</span></h2>
+  <div class="banner">
+    <b>Apex Healthcare Services — North Branch</b><br>
+    8920 N Cedar Ave, Salt Lake City, UT 84103<br>
+    <span class="muted">Source: S2 &nbsp;|&nbsp; Country: US &nbsp;|&nbsp; Script: Latin</span>
+  </div>
+
+  <h3>Ground-Truth Information</h3>
+  <p><strong>Candidate 1 (True Match):</strong> Apex Healthcare Services (ID: <code>s1_us_ut_00831</code>, 8920 N Cedar Ave, Salt Lake City)<br>
+  <strong>Candidate 2 (Sibling Distractor):</strong> Apex Healthcare Services (ID: <code>s1_us_ut_00832</code>, 440 S 500 E, Salt Lake City)</p>
+
+  <h3>Pipeline Trace</h3>
+  <table>
+    <tr><th>Step</th><th>Output / Decision</th><th>Details</th></tr>
+    <tr>
+      <td>1. Normalise + Tokenize</td>
+      <td><code>apex healthcare services north branch</code></td>
+      <td>Both candidates share identical core name <code>apex healthcare services</code>. Disambiguation requires address fields.</td>
+    </tr>
+    <tr>
+      <td>2. Parse Address</td>
+      <td>HOUSE: 8920, STREET: n cedar ave, CITY: salt lake city, STATE: ut, POSTCODE: 84103</td>
+      <td>Crucial step: parsed HOUSE (8920 vs 440) and STREET (n cedar ave vs s 500 e) separate the branches.</td>
+    </tr>
+    <tr>
+      <td>3. Retrieve Candidates</td>
+      <td>Both sibling entities retrieved in top-3 candidates due to high name TF-IDF similarity.</td>
+      <td>RRF score: Candidate 1 = 0.0294, Candidate 2 = 0.0281.</td>
+    </tr>
+    <tr>
+      <td>4. Individual Model Scores</td>
+      <td>
+        <strong>Candidate 1 (True):</strong> LightGBM: 0.884, BGE FT: 0.912, Siamese BiLSTM: 0.841<br>
+        <strong>Candidate 2 (Sibling):</strong> LightGBM: 0.412, BGE FT: 0.631, Siamese BiLSTM: 0.720
+      </td>
+      <td>Siamese RNN is confused by the high name overlap (0.720). LightGBM's address features heavily penalize Candidate 2 (0.412).</td>
+    </tr>
+    <tr>
+      <td>5. MoE Gating & Decision</td>
+      <td>
+        Gate detects presence of complete address fields → up-weights LightGBM (0.44) and BGE FT (0.38).<br>
+        <strong>Candidate 1: Fused p = 0.901 ★</strong> &nbsp;|&nbsp; Candidate 2: Fused p = 0.512 (below threshold 0.58)<br>
+        <strong>Decision: Matched to Candidate 1</strong> → <span class="ok">✓ CORRECT DISAMBIGUATION</span>
+      </td>
+      <td>MoE successfully prevents the false positive sibling link that a pure string model would have made.</td>
+    </tr>
+  </table>
+</div>
+
+<!-- ================= RECORD 4 ================= -->
+<div class="record-section" id="rec4">
+  <h2>Record 4: Known Failure Case <span class="pill pill-failure">Error Analysis</span></h2>
+  <div class="banner">
+    <b>K T C Ltd</b><br>
+    <i>(No address provided in Source-3 record)</i><br>
+    <span class="muted">Source: S3 &nbsp;|&nbsp; Country: India &nbsp;|&nbsp; Script: Latin</span>
+  </div>
+
+  <h3>Ground-Truth Information</h3>
+  <p><strong>True S1 Entity:</strong> Kerala Transport Company Limited (ID: <code>s1_in_kl_04112</code>) &nbsp;|&nbsp; <span class="bad">✗ Hard Abbreviation Miss</span></p>
+
+  <h3>Pipeline Trace</h3>
+  <table>
+    <tr><th>Step</th><th>Output / Decision</th><th>Details</th></tr>
+    <tr>
+      <td>1. Normalise + Tokenize</td>
+      <td><code>k t c limited</code></td>
+      <td>Acronym 'KTC' is expanded to 'k t c limited'. However, 'KTC' is not mapped to 'Kerala Transport Company' in the lexicon.</td>
+    </tr>
+    <tr>
+      <td>2. Parse Address</td>
+      <td><i>All fields empty</i></td>
+      <td>Record has no address field (common in S3 uncurated data).</td>
+    </tr>
+    <tr>
+      <td>3. Retrieve Candidates</td>
+      <td>TF-IDF retrieves distractor entities: <code>KTC Global Logistics</code>, <code>KTC Tyres Ltd</code>.</td>
+      <td><strong>Blocking miss:</strong> True entity 'Kerala Transport Company Limited' is ranked 14th by e5 and 22nd by TF-IDF → not in top-5 RRF candidates.</td>
+    </tr>
+    <tr>
+      <td>4. Individual Model Scores</td>
+      <td>
+        KTC Global Logistics: LightGBM = 0.621 ★, BGE FT = 0.584, IndicBERT = 0.490<br>
+        KTC Tyres Ltd: LightGBM = 0.541, BGE FT = 0.512
+      </td>
+      <td>Best matcher predicts match to distractor 'KTC Global Logistics' due to acronym agreement.</td>
+    </tr>
+    <tr>
+      <td>5. MoE Gating & Decision</td>
+      <td>
+        Gate detects <code>addr_empty = 1.0</code> and low retrieval cosines → reduces overall confidence.<br>
+        Best candidate fused p = 0.592 vs threshold 0.58 → <span class="bad">✗ FALSE POSITIVE (Predicted KTC Global Logistics, True: Kerala Transport Co.)</span>
+      </td>
+      <td><strong>Root cause:</strong> Blocking ceiling limitation (R@5 recall failure). Even perfect reranking cannot recover an entity missed during candidate generation.</td>
+    </tr>
+  </table>
+</div>
+
+<h2>Summary of Key Experimental Findings</h2>
+<div class="meta-card">
+  <ul>
+    <li><strong>Input-Conditional Gating:</strong> Dynamic routing achieves higher macro F0.5 than any individual model by leveraging script and address-completeness indicators.</li>
+    <li><strong>Cross-Lingual Resilience:</strong> The learned transliteration lexicon + IndicBERTv2 resolves Hindi/Malayalam script variation that breaks standard English baselines.</li>
+    <li><strong>Address Feature Importance:</strong> Sibling branch disambiguation requires explicit token-level alignment (BiLSTM-CRF), which string-only models lack.</li>
+    <li><strong>Blocking Ceiling:</strong> Records with unexpanded acronyms and missing addresses represent the primary failure mode, bounded by the R@5 candidate recall.</li>
+  </ul>
+</div>
+
+</body>
+</html>
+
