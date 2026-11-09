@@ -491,12 +491,14 @@ class MoEHead(nn.Module):
 
 class CEMoE(nn.Module):
     def __init__(self, name):
-        super().__init__(); self.enc = AutoModel.from_pretrained(name); self.moe = MoEHead(self.enc.config.hidden_size)
+        super().__init__(); self.enc = AutoModel.from_pretrained(name).float(); self.moe = MoEHead(self.enc.config.hidden_size)
     def forward(self, **enc): return self.moe(self.enc(**enc).last_hidden_state[:, 0])
 
 def build_ce(kind, name):
+    # .float(): transformers v5 loads weights in the checkpoint's dtype; mDeBERTa's checkpoint is fp16, and pure-fp16
+    # training gives NaN losses. The master weights must be fp32 (autocast still runs the forward pass in fp16 where AMP is on).
     if kind == 'moe': return CEMoE(name)
-    m = AutoModelForSequenceClassification.from_pretrained(name, num_labels=1, ignore_mismatched_sizes=True)
+    m = AutoModelForSequenceClassification.from_pretrained(name, num_labels=1, ignore_mismatched_sizes=True).float()
     if kind == 'lora':
         from peft import LoraConfig, get_peft_model, TaskType
         m = get_peft_model(m, LoraConfig(task_type=TaskType.SEQ_CLS, r=16, lora_alpha=32, lora_dropout=0.1, target_modules=['query', 'key', 'value']))

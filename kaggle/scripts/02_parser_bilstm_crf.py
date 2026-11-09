@@ -309,13 +309,15 @@ for ep in range(CFG['PARSER_EPOCHS']):
 parser_time = time.time() - t0
 
 # ==== Evaluation against silver labels (val) ====
-rows = []; labs = [t for t in TAGS if t != 'SEP']
+rows = []
 for cond in ('with commas', 'commas removed'):
     seqs, gold = [], []
     for i in va:
         toks, tags = REC_TOKS[i], rule_tags(REC_TOKS[i])
         if cond == 'commas removed': toks, tags = strip_commas(toks, tags)
         if toks: seqs.append(toks); gold.append(tags)
+    _seen = {t for s in gold for t in s}                 # macro F1 over the tags that occur (no POSTCODE in this data: it would count as 0)
+    labs = [t for t in TAGS if t != 'SEP' and t in _seen]
     pred = parser_decode(PARSER, seqs); rule_pred = [rule_tags(s) for s in seqs]
     for name, P_ in (('BiLSTM-CRF', pred), ('rules', rule_pred)):
         g = [t for s in gold for t in s]; p = [t for s in P_ for t in s]

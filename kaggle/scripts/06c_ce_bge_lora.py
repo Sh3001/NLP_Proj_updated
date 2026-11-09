@@ -288,12 +288,14 @@ class MoEHead(nn.Module):
 
 class CEMoE(nn.Module):
     def __init__(self, name):
-        super().__init__(); self.enc = AutoModel.from_pretrained(name); self.moe = MoEHead(self.enc.config.hidden_size)
+        super().__init__(); self.enc = AutoModel.from_pretrained(name).float(); self.moe = MoEHead(self.enc.config.hidden_size)
     def forward(self, **enc): return self.moe(self.enc(**enc).last_hidden_state[:, 0])
 
 def build_ce(kind, name):
+    # .float(): transformers v5 loads weights in the checkpoint's dtype; mDeBERTa's checkpoint is fp16, and pure-fp16
+    # training gives NaN losses. The master weights must be fp32 (autocast still runs the forward pass in fp16 where AMP is on).
     if kind == 'moe': return CEMoE(name)
-    m = AutoModelForSequenceClassification.from_pretrained(name, num_labels=1, ignore_mismatched_sizes=True)
+    m = AutoModelForSequenceClassification.from_pretrained(name, num_labels=1, ignore_mismatched_sizes=True).float()
     if kind == 'lora':
         from peft import LoraConfig, get_peft_model, TaskType
         m = get_peft_model(m, LoraConfig(task_type=TaskType.SEQ_CLS, r=16, lora_alpha=32, lora_dropout=0.1, target_modules=['query', 'key', 'value']))
@@ -325,6 +327,7 @@ n_all = sum(p.numel() for p in model.parameters())
 n_tr = sum(p.numel() for p in model.parameters() if p.requires_grad) if TRAIN else 0
 print(f'{n_all / 1e6:.0f}M parameters, {n_tr / 1e6:.2f}M trained')
 t0 = time.time()
+if DEVICE == 'cuda': torch.cuda.reset_peak_memory_stats()
 if TRAIN:
     A = PAIRS['A']; y = A.label.values.astype(np.float32)
     qs = A.qi.unique(); rng = np.random.default_rng(SEED); rng.shuffle(qs)          # sample whole candidate groups
@@ -340,14 +343,18 @@ if TRAIN:
         loss = F.binary_cross_entropy_with_logits(logit.float(), torch.as_tensor(y[b], device=DEVICE)) + 0.01 * aux
         opt.zero_grad(); scaler.scale(loss).backward(); scaler.unscale_(opt)
         nn.utils.clip_grad_norm_(model.parameters(), 1.0); scaler.step(opt); scaler.update(); sch.step()
-        if (st + 1) % 500 == 0: log(f'step {st + 1}/{steps} loss {loss.item():.4f}')
+        if (st + 1) % 500 == 0:
+            log(f'step {st + 1}/{steps} loss {loss.item():.4f}')
+            assert math.isfinite(loss.item()), 'loss is NaN/inf: training diverged, stopping instead of scoring a broken model'
 train_time = time.time() - t0
+GPU_GB = round(torch.cuda.max_memory_allocated() / 2**30, 2) if DEVICE == 'cuda' else None     # peak during training
+print('peak GPU memory during training:', GPU_GB, 'GB')
 S, G = {}, {}
 for sp in ('B', 'val', 'test'):
     S[sp], G[sp] = ce_score(model, PAIRS[sp]); log(f'scored {sp}')
 save_scores(METHOD, S)
 report('7 Transformers', METHOD, sigmoid(S['val']), sigmoid(S['test']),
-       params=f'{n_all / 1e6:.0f}M ({100 * n_tr / n_all:.1f}% trained)', train_min=round(train_time / 60, 1))
+       params=f'{n_all / 1e6:.0f}M ({100 * n_tr / n_all:.1f}% trained)', train_min=round(train_time / 60, 1), gpu_mem_gb=GPU_GB)
 (OUT / 'models').mkdir(exist_ok=True)                                  # weights for 08_demo: trained parameters only
 _w = {n: (p.detach().half() if AMP else p.detach()).cpu() for n, p in model.named_parameters() if p.requires_grad} if TRAIN else {}
 torch.save({'method': METHOD, 'kind': KIND, 'model': MODEL, 'max_len': CFG['MAX_LEN'], 'amp': AMP, 'trained': _w},
