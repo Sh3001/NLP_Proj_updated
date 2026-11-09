@@ -108,8 +108,15 @@ Sanity checks on the test split:
 
 ## 3. Kaggle notebooks (one per method)
 
-See [kaggle/README.md](kaggle/README.md). Upload `data/small.zip` as a Kaggle Dataset, then run
-`kaggle/notebooks/01 … 07` in order. `07_moe_fusion_and_results` builds the final results table.
+See [kaggle/README.md](kaggle/README.md). The data and the candidate pairs are already on Kaggle, so
+there is nothing to build or upload:
+
+| Dataset | Link |
+|---|---|
+| `er-small`: the `data/small` splits | https://www.kaggle.com/datasets/akshatiit/er-small |
+| `er-03-output`: output of `03_candidates` (candidate pairs, blocking numbers, fine-tuned e5) | https://www.kaggle.com/datasets/akshatiit/er-03-output |
+
+Attach them with **Add Input → Datasets**, then run `kaggle/notebooks/01 … 07` in order. `07_moe_fusion_and_results` builds the final results table.
 `08_demo` is the live demo: one record followed through every step (see the Kaggle README).
 
 Splits use BLAKE2b hashing for every random choice. (CRC32 was used at first, but CRC hashes of the
