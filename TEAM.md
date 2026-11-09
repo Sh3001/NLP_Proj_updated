@@ -43,10 +43,14 @@ GPU time is limited, so run the notebooks in this order. The first tier alone gi
 
 | Dataset | Contents | Attach to |
 |---|---|---|
-| `akshatiit/er-small` | `data/small` splits (train / val / test / test_labels) | every notebook |
-| `akshatiit/er-03-output` | output of `03_candidates`: candidate pairs (`prep/`), blocking numbers, fine-tuned e5 | 04, 05a–c, 06a–f, 07, 08 |
+| [`akshatiit/er-small`](https://www.kaggle.com/datasets/akshatiit/er-small) | `data/small` splits (train / val / test / test_labels), 68 MB | every notebook |
+| [`akshatiit/er-03-output`](https://www.kaggle.com/datasets/akshatiit/er-03-output) | output of `03_candidates`: candidate pairs (`prep/`), blocking numbers, fine-tuned e5, 420 MB | 04, 05a–c, 06a–f, 07, 08 |
 
-Both are private; ask Akshat to add you as a collaborator if you can't see them.
+Both are public. In your notebook: **Add Input → Datasets**, search for `er-small` / `er-03-output` (or
+paste the link). No upload and no permission needed. Your Kaggle account must be phone-verified, or
+*Internet* stays off and the Hugging Face downloads fail.
+
+Your own `er-<nn>-output` datasets (see the rules below) should also be public, so the rest of the team can attach them.
 
 ## Rules for every run
 
@@ -54,7 +58,7 @@ Both are private; ask Akshat to add you as a collaborator if you can't see them.
 * Run with `QUICK_RUN = True` once (a few minutes), then with `QUICK_RUN = False` (the real run).
 * Settings: GPU T4 (CPU for 01, 04, 07), Internet on.
 * When it finishes, download `out_<nn>.zip` from the Output panel. Upload it as a Kaggle Dataset named
-  `er-<nn>-output` and **share it with the team** (Dataset → Settings → Collaborators).
+  `er-<nn>-output` and **make it public** (Dataset → Settings → Sharing), then add its link to the table above.
 * Post the result numbers (val/test F0.5, P, R, per-country, training minutes) as a comment on your issue.
 * Thresholds are tuned on **val**; **test** is scored once. Do not tune anything on test.
 

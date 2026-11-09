@@ -26,12 +26,20 @@ Test labels are read only inside the final scoring function.
 All models are MIT or Apache-2.0: `multilingual-e5-small` (118M), `bge-reranker-base` (278M),
 `IndicBERTv2-MLM-only` (278M), `mdeberta-v3-base` (279M), and the mBERT tokenizer (Apache-2.0).
 
-## 1. Upload the data once
+## 1. Attach the shared datasets (no upload needed)
 
-Upload **`nlp_project/data/small.zip`** (built from `data/small`) as a new Kaggle Dataset:
-*Datasets → New Dataset → drag the zip in*, then name it, e.g. `er-small`. Kaggle unpacks it. The
-notebooks find the folder that contains `train/train_source1.tsv` by themselves, wherever it is under
-`/kaggle/input`.
+The team's data is already public on Kaggle:
+
+* **`er-small`**, the `data/small` splits: https://www.kaggle.com/datasets/akshatiit/er-small
+* **`er-03-output`**, output of `03_candidates` (candidate pairs, blocking numbers, fine-tuned e5):
+  https://www.kaggle.com/datasets/akshatiit/er-03-output
+
+In a notebook: **Add Input → Datasets**, search for the name or paste the link. The notebooks find the
+folder that contains `train/train_source1.tsv` by themselves, wherever it is under `/kaggle/input`.
+
+*Rebuilding the data yourself (optional):* run `python3 src/make_splits.py` as in the main README
+(it takes about 11 minutes on Kaggle's CPU), zip `data/small`, and upload it with *Datasets → New
+Dataset → drag the zip in*.
 
 ## 2. Import and run the notebooks, in this order
 
@@ -40,8 +48,10 @@ For each notebook: *Create → New Notebook → File → Import Notebook* → pi
 
 1. Right panel, **Settings**: *Accelerator* = **GPU T4 x2** (or *None* where the table says –),
    and *Internet* = **On** (models come from Hugging Face; a few pip packages are installed).
-2. **Add Input** → *Datasets* → your `er-small`. Then, for the notebooks that need them,
-   **Add Input** → *Your Work → Notebooks* → `03_candidates` (and the others listed above).
+2. **Add Input** → *Datasets* → `er-small`. For every notebook that needs `03` (all of them except 01 and 02),
+   also add **`er-03-output`**. For the later notebooks, add the other team members' public
+   `er-<nn>-output` datasets (listed in [TEAM.md](../TEAM.md)), or attach a notebook version under
+   *Your Work → Notebooks*.
 3. *Save Version → Save & Run All (Commit)*. It runs in the background. Results end up in the
    version's **Output** tab, and that output is what you attach to the later notebooks.
 
