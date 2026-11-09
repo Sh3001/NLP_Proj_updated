@@ -5,6 +5,13 @@ for mod, pip in [('anyascii', 'anyascii'), ('sklearn', 'scikit-learn'), ('transf
     try: importlib.import_module(mod)
     except ImportError:
         if subprocess.run([sys.executable, '-m', 'pip', 'install', '-q', pip]).returncode != 0: print('WARNING: could not install', pip)
+try:
+    from importlib.metadata import version as _pkg_version
+    if tuple(int(x) for x in _pkg_version('torchao').split('.')[:2]) < (0, 16):
+        subprocess.run([sys.executable, '-m', 'pip', 'uninstall', '-y', '-q', 'torchao']); importlib.invalidate_caches()
+        print('removed old torchao (incompatible with peft)')
+except Exception:
+    pass                                                          # torchao not installed: nothing to do
 import numpy as np, pandas as pd
 from anyascii import anyascii
 import warnings; warnings.filterwarnings('ignore', category=FutureWarning); warnings.filterwarnings('ignore', category=UserWarning)
