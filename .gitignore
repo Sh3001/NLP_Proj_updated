@@ -5,3 +5,4 @@ __pycache__/
 *.zip
 models/
 .ipynb_checkpoints/
+extra/
