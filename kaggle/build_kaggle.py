@@ -19,6 +19,18 @@ def code(s):
 
 
 # =============================================================================== shared cells
+# Kaggle ships torchao 0.10; recent peft raises ImportError when it finds a torchao older than 0.16
+# (even though LoRA here never uses torchao). Removing the old torchao makes peft skip it.
+TORCHAO_FIX = r'''
+try:
+    from importlib.metadata import version as _pkg_version
+    if tuple(int(x) for x in _pkg_version('torchao').split('.')[:2]) < (0, 16):
+        subprocess.run([sys.executable, '-m', 'pip', 'uninstall', '-y', '-q', 'torchao']); importlib.invalidate_caches()
+        print('removed old torchao (incompatible with peft)')
+except Exception:
+    pass                                                          # torchao not installed: nothing to do'''
+
+
 def setup_cell(pkgs, torch=True):
     return code(r'''
 # ==== Setup (Kaggle: Settings -> Internet ON; GPU T4 where the notebook needs one) ====
@@ -27,14 +39,14 @@ from pathlib import Path
 for mod, pip in %s:
     try: importlib.import_module(mod)
     except ImportError:
-        if subprocess.run([sys.executable, '-m', 'pip', 'install', '-q', pip]).returncode != 0: print('WARNING: could not install', pip)
+        if subprocess.run([sys.executable, '-m', 'pip', 'install', '-q', pip]).returncode != 0: print('WARNING: could not install', pip)%s
 import numpy as np, pandas as pd
 from anyascii import anyascii
 import warnings; warnings.filterwarnings('ignore', category=FutureWarning); warnings.filterwarnings('ignore', category=UserWarning)
 %s
 _T0 = time.time()
 def log(*a): print(f'[{(time.time() - _T0) / 60:6.1f} min]', *a, flush=True)
-''' % (repr(pkgs), r'''import torch, torch.nn as nn, torch.nn.functional as F
+''' % (repr(pkgs), TORCHAO_FIX if any(m == "peft" for m, _ in pkgs) else "", r'''import torch, torch.nn as nn, torch.nn.functional as F
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
 USE_AMP = DEVICE == 'cuda'
 print('device:', DEVICE, torch.cuda.get_device_name(0) if DEVICE == 'cuda' else '(CPU)')''' if torch else "DEVICE = 'cpu'"))
