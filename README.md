@@ -73,6 +73,17 @@ Rules for the experiments:
 * Tune hyper-parameters and the decision threshold on `val/`.
 * Score `test/` **once per final model**, with `test_labels/`.
 
+### Limitations to state in the report
+
+* **Distractor density.** Our splits keep the training data's density of unlinked records (≈ 1.2 per S1).
+  During the challenge we measured ≈ 2.3 per S1 on the official test set, so F0.5 on these splits is
+  optimistic compared with the leaderboard. Precision suffers most at higher density.
+* **Challenge vs course numbers.** The challenge pipeline (public LB 0.9895) used the full data and a
+  different validation scheme. Do not put it in the same table as the course results; present it as the
+  starting point, and the course splits as the controlled comparison.
+* **Subset.** `data/small` is about 3.5 % of the S1 entities (4 states). The ranking of methods should
+  carry over, but the absolute numbers are not those of a full-data model.
+
 ## 2. Evaluation (`src/evaluate.py`)
 
 This is the competition metric: macro F0.5 per Source-1 entity, with singletons included.

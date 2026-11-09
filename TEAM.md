@@ -11,9 +11,9 @@ deck, the README results table, or the live demo.
 | Member | Notebooks | Course topics | Shared job |
 |---|---|---|---|
 | **Akshat** | `01_tokenization`, `03_candidates` | Tokenization, Transformers (bi-encoder fine-tuning) | Shared Kaggle datasets; assembles the **slide deck** |
-| **Keshav** | `02_parser_bilstm_crf`, `04_gbm_baseline` | Parsing, LSTM (BiLSTM-CRF), classical baseline | Assembles the **final report** |
+| **Keshav** | `02_parser_bilstm_crf`, `04_gbm_baseline`, `06c_ce_bge_lora`, `06f_ce_mdeberta` | Parsing, LSTM (BiLSTM-CRF), edit distance (classical baseline), parameter-efficient fine-tuning (LoRA) | Assembles the **final report** |
 | **Rishi** | `05a/b/c_siamese_*`, `06e_ce_indicbert` | RNN, LSTM, GRU; Fine-tuning (Indic backbone) | Per-script error analysis across all models |
-| **Shivam** | `06a`, `06b`, `06c`, `06f` (cross-encoders) | Transformers, Fine-tuning (zero-shot vs full vs LoRA) | Keeps the **README results table** and repo up to date |
+| **Shivam** | `06a`, `06b` (cross-encoder zero-shot vs full fine-tune), Ditto-style cross-encoder | Transformers, pretraining + fine-tuning (Ditto, [Li et al. 2020](https://arxiv.org/abs/2004.00584)) | Keeps the **README results table** and repo up to date |
 | **Ayush** | `06d_ce_bge_moe_head`, `07_moe_fusion_and_results`, `08_demo` | Mixture of Experts | Runs the **live demo** in the presentation |
 
 ## Order of work (dependencies)
@@ -27,6 +27,26 @@ Akshat: upload data/small  ──►  03_candidates  ──►  everyone's model
 * 02 and 01 do not need 03, so Keshav and Akshat can start on them on day 1.
 * 07 needs the outputs of 04, 05a–c and 06a–f.
 * 08 needs 02–07 run **with the current notebooks**, which save model weights in `models/`.
+
+## Priority if time runs short
+
+GPU time is limited, so run the notebooks in this order. The first tier alone gives the full story
+(classical → RNN → zero-shot transformer → fine-tuned transformer → MoE fusion).
+
+| Tier | Notebooks | Why |
+|---|---|---|
+| 1, must have | 03, 01, 04, 05a, 06a, 06b, 07 | One model per course block, plus the final table |
+| 2, should have | 02, 05b, 06c, 06d, Ditto variant | Parsing, LSTM vs GRU, LoRA vs full, MoE head |
+| 3, if time allows | 05c, 06e, 06f (1.5–2.5 h), live 08 | Extra comparisons; 08 can fall back to stored test scores |
+
+## Shared Kaggle datasets
+
+| Dataset | Contents | Attach to |
+|---|---|---|
+| `akshatiit/er-small` | `data/small` splits (train / val / test / test_labels) | every notebook |
+| `akshatiit/er-03-output` | output of `03_candidates`: candidate pairs (`prep/`), blocking numbers, fine-tuned e5 | 04, 05a–c, 06a–f, 07, 08 |
+
+Both are private; ask Akshat to add you as a collaborator if you can't see them.
 
 ## Rules for every run
 
