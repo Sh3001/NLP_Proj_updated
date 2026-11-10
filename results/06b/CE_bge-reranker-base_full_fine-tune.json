@@ -1,0 +1,16 @@
+{
+ "section": "7 Transformers",
+ "method": "CE bge-reranker-base full fine-tune",
+ "threshold": 0.05,
+ "val_f05": 0.99338,
+ "test_f05": 0.99124,
+ "test_P": 0.9941,
+ "test_R": 0.9878,
+ "test_singleton_acc": 0.984,
+ "quick": false,
+ "test_f05_India": 0.99299,
+ "test_f05_US": 0.98935,
+ "params": "278M (100.0% trained)",
+ "train_min": 19.4,
+ "gpu_mem_gb": 5.53
+}

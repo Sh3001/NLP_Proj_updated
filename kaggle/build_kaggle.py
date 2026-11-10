@@ -1458,7 +1458,7 @@ def run_ditto(c):
     gpu_gb = round(torch.cuda.max_memory_allocated() / 2**30, 2) if DEVICE == 'cuda' else None
     S = {}
     for sp in (('B', 'val', 'test') if final else ('val', 'test')):
-        S[sp] = ditto_score(model, tok, PAIRS[sp], ser_for(dk, su, np.concatenate([PAIRS[sp].qi.values, PAIRS[sp].si.values])), CFG['EVAL_BS']); log(f'scored {sp}')
+        S[sp] = ditto_score(model, tok, PAIRS[sp], ser_for(dk, su, np.concatenate([PAIRS[sp].qi.values, PAIRS[sp].si.values])), CFG['DITTO_EVAL_BS']); log(f'scored {sp}')
     pv, pt = sigmoid(S['val']), sigmoid(S['test'])
     thr, _, _ = ev('val').tune(best_per_record(PAIRS['val'], pv))
     extra = {**pair_f1(pv, pt), **script_f05(best_per_record(PAIRS['test'], pt), thr)}
