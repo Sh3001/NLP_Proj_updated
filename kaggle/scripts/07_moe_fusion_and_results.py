@@ -353,10 +353,10 @@ for p in find_all('results/*.json') + sorted((OUT / 'results').glob('*.json')):
     r = json.load(open(p)); RES[r['method']] = r
 R = pd.DataFrame(RES.values())
 if R.quick.astype(str).str.lower().eq('true').any(): print('NOTE: some rows come from QUICK_RUN notebooks:', R[R.quick.astype(str).str.lower() == 'true'].method.tolist())
-order = {s: i for i, s in enumerate(['5 Classical baseline', '6 RNN / LSTM', '7 Transformers', '8 Fusion'])}
+order = {s: i for i, s in enumerate(['5 Classical baseline', '6 RNN / LSTM', '7 Transformers', '7b Ditto ablation', '8 Fusion'])}
 R = R.assign(o=R.section.map(order)).sort_values(['o', 'test_f05'], ascending=[True, False]).drop(columns='o')
 cols = [c for c in ['section', 'method', 'val_f05', 'test_f05', 'test_P', 'test_R', 'test_f05_US', 'test_f05_India',
-                    'test_singleton_acc', 'params', 'train_min', 'threshold'] if c in R]
+                    'test_pair_f1', 'test_singleton_acc', 'params', 'train_min', 'threshold'] if c in R]
 print(R[cols].to_string(index=False)); R[cols].to_csv(OUT / 'final_results.csv', index=False)
 bl_p = find_one('blocking.json'); bl = json.load(open(bl_p)) if bl_p else {}
 if bl:
@@ -374,6 +374,7 @@ with open(OUT / 'final_results.md', 'w') as f:
             except ImportError: txt = d.to_string(index=False)
             f.write(f'\n### {name}\n\n{txt}\n'); print(f'\n{name}:'); print(d.to_string(index=False))
 
+R = R[R.section != '7b Ditto ablation']                      # the ablation runs have their own table (06g)
 fig, ax = plt.subplots(figsize=(10, 0.45 * len(R) + 1.2))
 colors = {'5 Classical baseline': '#8c8c8c', '6 RNN / LSTM': '#4C78A8', '7 Transformers': '#F58518', '8 Fusion': '#54A24B'}
 ax.barh(R.method, R.test_f05, color=[colors.get(s, '#999') for s in R.section])

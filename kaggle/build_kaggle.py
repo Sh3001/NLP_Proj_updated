@@ -583,6 +583,126 @@ class GatedMoE(nn.Module):
 '''
 
 
+DITTO_SRC = r'''
+# ==== Ditto (Li et al., VLDB 2021): serialization, DK, SU, DA / MixDA, model ====
+DITTO_COLS = ['house', 'street', 'locality', 'landmark', 'city', 'state', 'postcode']
+P_COLS = ['p_' + c for c in DITTO_COLS]                       # parsed address fields (02, or the rules)
+MARKERS = ['[COL]', '[VAL]', '[NUM]']
+AUG_OPS = ['span_del', 'span_shuffle', 'attr_del', 'attr_shuffle', 'entry_swap']
+_HOUSE_NOISE = set(HOUSE_WORDS) | {'h.no', 'no', '#'}
+
+def norm_house(s):                                            # span normalisation: 'h.no. ##110' -> ['110']
+    out = []
+    for t in s.split():
+        t = t.strip('#.,:-')
+        if t and t not in _HOUSE_NOISE: out.append(t)
+    return out
+
+def _expand(s):                                               # span normalisation: abbreviations, '##110' -> '110'
+    out = []
+    for t in s.split():
+        t = t.lstrip('#') or t; out.append(ABBR.get(t, t))
+    return out
+
+def attrs_of(ix, dk, summ=None):
+    # one record -> [(column, [words])]. plain: name + address as in the other cross-encoders.
+    # dk (domain knowledge): span normalisation (romanisation, learned lexicon, abbreviations, house numbers)
+    #                        + span typing (the parser's HOUSE / STREET / LOCALITY / LANDMARK / CITY / STATE / POSTCODE spans)
+    if not dk:
+        name, addr = REC.name.values[ix], REC.addr.values[ix]
+        n = name if name.isascii() else f'{name} / {norm_rec(name, expand=False)}'
+        a = addr if addr.isascii() else romanise(addr)
+        attrs = [('name', n.split()), ('address', a.split())]
+    else:
+        attrs = [('name', REC.nn.values[ix].split())]
+        for c in DITTO_COLS:
+            v = REC['p_' + c].values[ix]
+            ws = norm_house(v) if c == 'house' else _expand(v)
+            if ws: attrs.append((c, ws))
+        if len(attrs) == 1 and REC.na.values[ix]: attrs.append(('address', REC.na.values[ix].split()))
+    return summ(attrs) if summ is not None else attrs
+
+def serialize(attrs, mark_num=False):
+    # [COL] name [VAL] balaji care private limited [COL] house [VAL] [NUM] 110 ...
+    out = []
+    for c, ws in attrs:
+        out += ['[COL]', c, '[VAL]']
+        for w in ws:
+            if mark_num and any(ch.isdigit() for ch in w): out.append('[NUM]')      # span typing: numbers
+            out.append(w)
+    return ' '.join(out)
+
+class Summarizer:
+    # SU: keep the words with the highest TF-IDF instead of cutting the end. Every attribute keeps its best word.
+    def __init__(self, dk, budget, idf=None, default=None):
+        self.dk, self.budget, self.idf, self.default = dk, budget, idf or {}, default or 1.0
+    def fit(self, ix):
+        df = collections.Counter(); n = 0
+        for i in ix:
+            df.update({w for _, ws in attrs_of(int(i), self.dk) for w in ws}); n += 1
+        self.idf = {w: math.log((n + 1) / (c + 1)) + 1 for w, c in df.items() if c >= 2}
+        self.default = math.log(n + 1) + 1                    # unseen / rare words are the most informative
+        return self
+    def select(self, attrs):                                   # set of kept (attr, word) positions, None = keep all
+        flat = [(ai, wi, w) for ai, (_, ws) in enumerate(attrs) for wi, w in enumerate(ws)]
+        if len(flat) <= self.budget: return None
+        score = lambda w: self.idf.get(w, self.default)
+        keep = set()
+        for ai, (_, ws) in enumerate(attrs):
+            if ws: keep.add((ai, max(range(len(ws)), key=lambda k: score(ws[k]))))
+        rest = sorted((t for t in flat if (t[0], t[1]) not in keep), key=lambda t: (-score(t[2]), t[0], t[1]))
+        keep |= {(t[0], t[1]) for t in rest[:max(0, self.budget - len(keep))]}
+        return keep
+    def __call__(self, attrs):
+        keep = self.select(attrs)
+        if keep is None: return attrs
+        return [(c, [w for wi, w in enumerate(ws) if (ai, wi) in keep]) for ai, (c, ws) in enumerate(attrs)]
+
+def augment(A, B, op, rng):
+    # DA operators of Ditto on a pair of attribute lists
+    if op == 'all': op = AUG_OPS[int(rng.integers(len(AUG_OPS)))]
+    A = [(c, list(w)) for c, w in A]; B = [(c, list(w)) for c, w in B]
+    if op == 'entry_swap': return B, A
+    if op == 'attr_shuffle':
+        return [A[i] for i in rng.permutation(len(A))], [B[i] for i in rng.permutation(len(B))]
+    X = A if rng.random() < 0.5 else B
+    if op == 'attr_del':
+        if len(X) > 1: del X[int(rng.integers(len(X)))]
+        return A, B
+    ok = [k for k, (_, ws) in enumerate(X) if len(ws) >= 2]
+    if not ok: return A, B
+    ws = X[ok[int(rng.integers(len(ok)))]][1]
+    if op == 'span_del':
+        L = int(rng.integers(1, min(3, len(ws) - 1) + 1)); s = int(rng.integers(0, len(ws) - L + 1)); del ws[s:s + L]
+    else:                                                      # span_shuffle
+        L = int(rng.integers(2, min(4, len(ws)) + 1)); s = int(rng.integers(0, len(ws) - L + 1))
+        seg = ws[s:s + L]; rng.shuffle(seg); ws[s:s + L] = seg
+    return A, B
+
+def ditto_tokenizer(name):
+    tok = AutoTokenizer.from_pretrained(name)
+    tok.add_special_tokens({'additional_special_tokens': MARKERS})
+    return tok
+
+class DittoModel(nn.Module):
+    # pre-trained LM + linear layer on the [CLS] vector. MixDA: h = lam * h(x) + (1 - lam) * h(augmented x)
+    def __init__(self, name, tok, pretrained=True):
+        super().__init__()
+        from transformers import AutoConfig
+        self.enc = (AutoModel.from_pretrained(name) if pretrained else AutoModel.from_config(AutoConfig.from_pretrained(name))).float()   # fp32 master weights, AMP runs the forward in fp16
+        ids = tok.convert_tokens_to_ids(MARKERS)
+        if max(ids) >= self.enc.get_input_embeddings().weight.shape[0]: self.enc.resize_token_embeddings(len(tok))
+        if pretrained:                                         # the new markers start at the mean embedding
+            with torch.no_grad():
+                w = self.enc.get_input_embeddings().weight; keep = torch.ones(w.shape[0], dtype=torch.bool); keep[ids] = False
+                w[ids] = w[keep].mean(0)
+        self.drop = nn.Dropout(0.1); self.fc = nn.Linear(self.enc.config.hidden_size, 1)
+    def forward(self, enc, n=None, lam=None):
+        h = self.enc(**enc).last_hidden_state[:, 0]
+        if lam is not None: h = lam[:, None] * h[:n] + (1 - lam[:, None]) * h[n:]     # first n rows = originals, rest = augmented
+        return self.fc(self.drop(h)).squeeze(-1).float()
+'''
+
 RUN_NOTE = r"""
 **Run on Kaggle:** *Settings → Accelerator: %s, Internet: On.* Inputs: %s.
 Then *Save Version → Save & Run All*. Results are in the notebook's **Output** tab, and later
@@ -1203,6 +1323,264 @@ Scores the same candidate pairs as every other matcher (from 03). Output: logits
 (used by 07) and the test metrics.
 """, "GPU T4", "the dataset and the output of `03_candidates`", cells_)
 
+DITTO_PARSE = r'''
+# ==== Parsed address fields for the domain-knowledge attributes (from 02, else the rule parser) ====
+_pf = find_one('prep/parsed_fields.parquet')
+if _pf is not None:
+    pf = pd.read_parquet(_pf).set_index('id').reindex(REC.id.values).fillna(''); PARSE_SRC = 'BiLSTM-CRF (02)'
+else:
+    print('02 output not attached -> rule parser'); toks = [addr_tokens(a) for a in REC.addr.values]
+    fl = [fields_from(t, rule_tags(t)) for t in toks]
+    pf = pd.DataFrame({f'p_{k.lower()}': [d.get(k, '') for d in fl] for k in TAGS if k != 'SEP'}, index=REC.id.values); PARSE_SRC = 'rules'
+for c in P_COLS: REC[c] = pf[c].values
+print('parsed fields from', PARSE_SRC)
+for i in np.random.default_rng(1).choice(len(REC), 3, replace=False):
+    print('\nplain :', serialize(attrs_of(i, False))); print('DK    :', serialize(attrs_of(i, True), True))
+'''
+
+DITTO_RUNS = r'''
+# ==== Ditto: one training + evaluation run per configuration ====
+BBN = {'xlmr': 'xlm-roberta-base', 'bge': 'BAAI/bge-reranker-base'}      # both MIT
+LRS = {'xlmr': 3e-5, 'bge': 2e-5}
+BS, L_MAX, ALPHA = CFG['DITTO_BS'], CFG['DITTO_LEN'], CFG['DITTO_ALPHA']
+SEC_ABL = '7b Ditto ablation'
+
+def C(dk=False, su=False, da=None, bb='xlmr', n=None, final=False):
+    return dict(dk=dk, su=su, da=da, bb=bb, n=n, final=final)
+
+def run_name(c):
+    fl = [x for x in ('DK' if c['dk'] else '', 'SU' if c['su'] else '', f"DA-{c['da']}" if c['da'] else '') if x] or ['plain']
+    n = c['n']; nl = f'{n // 1000}k' if n >= 1000 and n % 1000 == 0 else str(n)
+    return f"Ditto{' final' if c['final'] else ''} {c['bb']} {'+'.join(fl)} {nl}"
+
+SUMM = {}
+def get_summ(dk):                                    # IDF from 100k train records (never val / test)
+    if dk not in SUMM:
+        tr = np.where(REC.split.values == 'train')[0]
+        ix = np.random.default_rng(SEED).choice(tr, min(100_000, len(tr)), replace=False)
+        SUMM[dk] = Summarizer(dk, CFG['DITTO_SU_WORDS']).fit(ix)
+    return SUMM[dk]
+
+SER = {'key': None, 'arr': None}
+def ser_for(dk, su, idx):                            # serialized text of every record in idx (cached for the current dk / su)
+    if SER['key'] != (dk, su): SER.update(key=(dk, su), arr=np.full(len(REC), None, dtype=object))
+    arr = SER['arr']; summ = get_summ(dk) if su else None
+    for i in np.unique(idx):
+        if arr[i] is None: arr[i] = serialize(attrs_of(int(i), dk, summ), dk)
+    return arr
+
+@torch.no_grad()
+def ditto_score(model, tok, P, ser, bs):
+    model.eval(); ta, tb = ser[P.qi.values], ser[P.si.values]
+    order = np.argsort([len(a) + len(b) for a, b in zip(ta, tb)]); out = np.zeros(len(P), np.float32)
+    for a in range(0, len(order), bs):
+        rows = order[a:a + bs]
+        enc = tok(list(ta[rows]), list(tb[rows]), truncation=True, max_length=L_MAX, padding=True, return_tensors='pt').to(DEVICE)
+        with autocast(): out[rows] = model(enc).float().cpu().numpy()
+    return out
+
+def pair_labels(sp):                                 # the test labels are read here, for the final scoring only
+    if sp == 'test':
+        own = ev('test').owner; return np.array([own.get(q) == s for q, s in zip(PAIRS['test'].q_id, PAIRS['test'].s_id)], np.int8)
+    return PAIRS[sp].label.values
+
+def _f1(y, pred):
+    tp = int((pred & (y == 1)).sum()); P = tp / max(int(pred.sum()), 1); R = tp / max(int(y.sum()), 1)
+    return (2 * P * R / (P + R) if P + R else 0.0), P, R
+
+def pair_f1(p_val, p_test):                          # pair-level F1 on the candidate pairs (Ditto's metric), threshold tuned on val
+    yv, yt = pair_labels('val'), pair_labels('test')
+    t = max(np.arange(0.05, 0.96, 0.01), key=lambda t: _f1(yv, p_val >= t)[0]); f, P, R = _f1(yt, p_test >= t)
+    return {'test_pair_f1': round(f, 5), 'test_pair_P': round(P, 4), 'test_pair_R': round(R, 4), 'pair_thr': round(float(t), 2)}
+
+def script_f05(bt, thr):                             # record-level F0.5 per script of the S2/S3 record (test)
+    own = ev('test').owner; sel = bt[bt.p >= thr]
+    qids = REC.id.values[(REC.split.values == 'test') & (REC.src.values != 'S1')]; qs = REC.script.values[ID2IX[qids].values]
+    out = {}
+    for s in SCRIPTS:
+        nt = sum(1 for q, sc in zip(qids, qs) if sc == s and q in own)
+        m = REC.script.values[ID2IX[sel.q_id.values].values] == s; npred = int(m.sum())
+        tp = sum(1 for q, r in zip(sel.q_id.values[m], sel.s_id.values[m]) if own.get(q) == r)
+        P = tp / max(npred, 1); R = tp / max(nt, 1); out[f'script_f05_{s}'] = round(1.25 * P * R / (0.25 * P + R), 5) if P + R else 0.0
+        out[f'script_n_{s}'] = nt
+    return out
+
+def run_ditto(c):
+    t_all = time.time(); dk, su, da, bkey, n, final = c['dk'], c['su'], c['da'], c['bb'], c['n'], c['final']
+    method = run_name(c); name = os.environ.get('NLP_ER_MODEL_OVERRIDE', BBN[bkey]); summ = get_summ(dk) if su else None
+    print(f'\n######## {method}  ({name})')
+    tok = ditto_tokenizer(name); model = DittoModel(name, tok).to(DEVICE)
+    A = PAIRS['A']; y = A.label.values.astype(np.float32)                    # training pairs: whole candidate groups of part A
+    qs = A.qi.unique(); rng = np.random.default_rng(SEED); rng.shuffle(qs)
+    cum = A.groupby('qi').size().reindex(qs).cumsum().values
+    rows = np.where(A.qi.isin(set(qs[:np.searchsorted(cum, n) + 1])).values)[0]; rng.shuffle(rows)
+    epochs = max(1, math.ceil(CFG['DITTO_MIN_STEPS'] * BS / len(rows)))      # small training sets are repeated (as in the paper)
+    steps = epochs * math.ceil(len(rows) / BS)
+    ser = ser_for(dk, su, np.concatenate([A.qi.values[rows], A.si.values[rows]]))
+    opt = torch.optim.AdamW(model.parameters(), lr=LRS[bkey], weight_decay=0.01)
+    sch = get_linear_schedule_with_warmup(opt, int(0.1 * steps), steps); scaler = make_scaler(USE_AMP)
+    arng = np.random.default_rng(SEED + 1); st = 0; t0 = time.time(); model.train()
+    if DEVICE == 'cuda': torch.cuda.reset_peak_memory_stats()
+    print(f'{len(rows):,} pairs ({y[rows].mean():.3f} positive), {epochs} epoch(s), {steps:,} steps, DK={dk} SU={su} DA={da}')
+    for e in range(epochs):
+        order = rows if e == 0 else rows[np.random.default_rng(SEED + e).permutation(len(rows))]
+        for a in range(0, len(order), BS):
+            b = order[a:a + BS]; qi, si = A.qi.values[b], A.si.values[b]; nb = len(b)
+            ta, tb = list(ser[qi]), list(ser[si]); lam = None
+            if da:                                                           # MixDA: encode the augmented copy in the same batch
+                for q_, s_ in zip(qi, si):
+                    X, Y = augment(attrs_of(int(q_), dk, summ), attrs_of(int(s_), dk, summ), da, arng)
+                    ta.append(serialize(X, dk)); tb.append(serialize(Y, dk))
+                lam = arng.beta(ALPHA, ALPHA, nb); lam = torch.as_tensor(np.maximum(lam, 1 - lam), dtype=torch.float32, device=DEVICE)
+            enc = tok(ta, tb, truncation=True, max_length=L_MAX, padding=True, return_tensors='pt').to(DEVICE)
+            with autocast(): logit = model(enc, nb, lam) if da else model(enc)
+            loss = F.binary_cross_entropy_with_logits(logit, torch.as_tensor(y[b], device=DEVICE))
+            assert math.isfinite(loss.item()), 'loss is NaN/inf: training diverged, stopping instead of scoring a broken model'
+            opt.zero_grad(); scaler.scale(loss).backward(); scaler.unscale_(opt)
+            nn.utils.clip_grad_norm_(model.parameters(), 1.0); scaler.step(opt); scaler.update(); sch.step(); st += 1
+            if st % 500 == 0: log(f'step {st}/{steps} loss {loss.item():.4f}')
+    train_time = time.time() - t0
+    gpu_gb = round(torch.cuda.max_memory_allocated() / 2**30, 2) if DEVICE == 'cuda' else None
+    S = {}
+    for sp in (('B', 'val', 'test') if final else ('val', 'test')):
+        S[sp] = ditto_score(model, tok, PAIRS[sp], ser_for(dk, su, np.concatenate([PAIRS[sp].qi.values, PAIRS[sp].si.values])), CFG['EVAL_BS']); log(f'scored {sp}')
+    pv, pt = sigmoid(S['val']), sigmoid(S['test'])
+    thr, _, _ = ev('val').tune(best_per_record(PAIRS['val'], pv))
+    extra = {**pair_f1(pv, pt), **script_f05(best_per_record(PAIRS['test'], pt), thr)}
+    n_par = sum(p.numel() for p in model.parameters())
+    row = report('7 Transformers' if final else SEC_ABL, method, pv, pt, params=f'{n_par / 1e6:.0f}M', train_min=round(train_time / 60, 1), gpu_mem_gb=gpu_gb,
+                 ditto_cfg=c, ditto_pairs=len(rows), ditto_epochs=epochs, parsed_fields=PARSE_SRC, **extra)
+    if final:                                                                # only the final run feeds 07 and the demo
+        save_scores(method, S); (OUT / 'models').mkdir(exist_ok=True)
+        torch.save({'method': method, 'cfg': c, 'backbone': name, 'max_len': L_MAX, 'su_words': CFG['DITTO_SU_WORDS'],
+                    'idf': SUMM[dk].idf if su else {}, 'default_idf': SUMM[dk].default if su else 1.0,
+                    'state_dict': {k: (v.half() if v.is_floating_point() else v) for k, v in model.state_dict().items()}},
+                   OUT / 'models' / f'{safe_name(method)}.ditto.pt')
+        print('saved the final model for the demo')
+    print(f'run time {(time.time() - t_all) / 60:.1f} min'); del model, opt; return row
+
+nA, nO, nL, nF = CFG['DITTO_N_ABL'], CFG['DITTO_N_OP'], CFG['DITTO_N_LOW'], CFG['DITTO_N_FINAL']
+SETS = {'ablation': [C(n=nA), C(dk=True, n=nA), C(su=True, n=nA), C(da='all', n=nA), C(True, True, 'all', 'xlmr', nA), C(True, True, 'all', 'bge', nA)],
+        'operators': [C(da=op, n=nO) for op in AUG_OPS + ['all']],
+        'label_eff': [C(n=k) for k in nL] + [C(True, True, 'all', 'xlmr', k) for k in nL]}
+
+def pick_final():                                    # best ablation run by VAL F0.5 (an ablation run from this or an attached notebook)
+    base = C(True, True, 'all', 'xlmr', nF, True); mode = CFG['DITTO_FINAL']
+    if mode == 'full': return base
+    if mode == 'full-bge': return {**base, 'bb': 'bge'}
+    cands = {}
+    for p in find_all('results/*.json') + sorted((OUT / 'results').glob('*.json')):
+        r = json.load(open(p)); c = r.get('ditto_cfg')
+        if c and not c.get('final') and c.get('n') == nA: cands[r['method']] = r
+    if not cands: print('no ablation results found -> full Ditto'); return base
+    best = max(cands.values(), key=lambda r: r['val_f05']); c = best['ditto_cfg']
+    print(f"final configuration = best ablation run by val F0.5: {best['method']} (val {best['val_f05']})")
+    return C(c['dk'], c['su'], c['da'], c['bb'], nF, True)
+'''
+
+DITTO_EXEC = r'''
+# ==== Run the selected set (RUN_SET in the configuration cell) ====
+# 'ablation' (R1-R6) | 'operators' (each augmentation operator) | 'label_eff' (2k / 10k pairs) | 'final' | 'all'
+_sets = ['ablation', 'operators', 'label_eff'] if CFG['RUN_SET'] == 'all' else ([] if CFG['RUN_SET'] == 'final' else [CFG['RUN_SET']])
+DONE = []
+def go(c):
+    try: DONE.append(run_ditto(c))
+    except Exception:
+        import traceback; traceback.print_exc(); print('RUN FAILED:', run_name(c))     # one failure does not stop the session
+    gc.collect()
+    if DEVICE == 'cuda': torch.cuda.empty_cache()
+for s_ in _sets:
+    for c_ in SETS[s_]: go(c_)
+if CFG['RUN_SET'] in ('all', 'final'): go(pick_final())
+print(f'\n{len(DONE)} runs finished')
+'''
+
+DITTO_SUMMARY = r'''
+# ==== Ablation table, label-efficiency plot, per-script scores ====
+import matplotlib.pyplot as plt
+RES = {}
+for p in find_all('results/*.json') + sorted((OUT / 'results').glob('*.json')):
+    r = json.load(open(p)); RES[r['method']] = r
+rows = []
+for m, r in RES.items():
+    c = r.get('ditto_cfg')
+    if c: rows.append({'method': m, 'DK': c['dk'], 'SU': c['su'], 'DA': c['da'] or '-', 'backbone': c['bb'], 'pairs': r.get('ditto_pairs', c['n']),
+                       'final': c['final'], **{k: r.get(k) for k in ('val_f05', 'test_f05', 'test_P', 'test_R', 'test_pair_f1', 'train_min')},
+                       **{k.replace('script_f05_', 'f05_'): r.get(k) for k in r if k.startswith('script_f05_')}})
+D = pd.DataFrame(rows)
+if len(D):
+    D = D.sort_values(['final', 'backbone', 'pairs', 'DK', 'SU', 'DA']).reset_index(drop=True)
+    ref = RES.get('CE bge-reranker-base full fine-tune')                               # R0: plain text + bge, from 06b (if attached)
+    if ref: print('R0 (06b, plain text, bge, full fine-tune): test F0.5', ref['test_f05'], '| val', ref['val_f05'])
+    D.to_csv(OUT / 'ditto_ablation.csv', index=False); print(D.drop(columns=['final']).round(4).to_string(index=False))
+    full = D[(D.DK) & (D.SU) & (D.DA == 'all') & (D.backbone == 'xlmr') & (~D.final)]; plain = D[(~D.DK) & (~D.SU) & (D.DA == '-') & (D.backbone == 'xlmr') & (~D.final)]
+    if len(full) > 1 or len(plain) > 1:
+        fig, ax = plt.subplots(figsize=(6, 3.6))
+        for d_, lab in ((plain, 'plain serialization (R1)'), (full, 'DK + SU + DA (R5)')):
+            d_ = d_.sort_values('pairs'); ax.plot(d_.pairs, d_.test_f05, 'o-', label=lab)
+        ax.set_xscale('log'); ax.set_xlabel('training pairs'); ax.set_ylabel('test macro F0.5'); ax.legend(); ax.set_title('Label efficiency')
+        plt.tight_layout(); plt.savefig(OUT / 'ditto_label_efficiency.png', dpi=150); plt.show()
+    ops = D[(~D.DK) & (~D.SU) & (D.DA != '-') & (D.backbone == 'xlmr') & (~D.final)]
+    if len(ops): print('\naugmentation operators (plain serialization):'); print(ops[['DA', 'pairs', 'val_f05', 'test_f05', 'test_pair_f1']].round(4).to_string(index=False))
+'''
+
+DITTO_LEN = r'''
+# ==== Token lengths with and without summarisation (val pairs), per script of the S2/S3 record ====
+_tk = ditto_tokenizer(os.environ.get('NLP_ER_MODEL_OVERRIDE', BBN['xlmr']))
+_P = PAIRS['val'].sample(min(4000, len(PAIRS['val'])), random_state=SEED).reset_index(drop=True); _rows = []
+for dk_, su_ in ((False, False), (False, True), (True, False), (True, True)):
+    _s = ser_for(dk_, su_, np.concatenate([_P.qi.values, _P.si.values]))
+    ln = np.array([len(x) for x in _tk(list(_s[_P.qi.values]), list(_s[_P.si.values]), truncation=False)['input_ids']])
+    sc_ = REC.script.values[_P.qi.values]
+    for g in ['all'] + SCRIPTS:
+        m = np.ones(len(ln), bool) if g == 'all' else sc_ == g
+        if m.any(): _rows.append({'DK': dk_, 'SU': su_, 'script': g, 'pairs': int(m.sum()), 'mean_tokens': round(float(ln[m].mean()), 1),
+                                  f'share_truncated_at_{L_MAX}': round(float((ln[m] > L_MAX).mean()), 4)})
+LEN = pd.DataFrame(_rows); LEN.to_csv(OUT / 'ditto_lengths.csv', index=False); print(LEN.to_string(index=False))
+'''
+
+
+# =============================================================================== 06g Ditto
+write("06g_ditto", "06g · Ditto: deep entity matching with a pre-trained language model (Li et al., 2021)", r"""
+**Course topics: Transformers, Fine-tuning (+ the parser from 02 and the tokenization work from 01).**
+
+Reproduces **Ditto** (Li, Li, Suhara, Doan, Tan: *Deep Entity Matching with Pre-Trained Language Models*,
+VLDB 2021) on the same candidate pairs, split and metric as every other matcher. A pair of records is
+**serialized** as `[COL] name [VAL] ... [COL] city [VAL] ...`, the two serializations are fed to one
+pre-trained language model as a sentence pair, and the `[CLS]` vector is classified.
+
+Ditto's three optimisations, each switchable, so the notebook is an **ablation**:
+
+* **DK (domain knowledge)**: span normalisation (romanisation, the learned transliteration lexicon,
+  abbreviations, house numbers) and span typing (the **BiLSTM-CRF parser** from 02 types the address
+  spans: house, street, locality, landmark, city, state, postcode; numbers are marked `[NUM]`).
+* **SU (summarisation)**: when a record is too long, keep the words with the highest TF-IDF
+  (IDF fitted on train) instead of cutting the end.
+* **DA (data augmentation, MixDA)**: `span_del`, `span_shuffle`, `attr_del`, `attr_shuffle`, `entry_swap`.
+  The augmented pair is encoded too and the two `[CLS]` vectors are interpolated,
+  `h = lam * h(x) + (1 - lam) * h(x')`, lam ~ Beta(0.8, 0.8) made >= 0.5.
+
+**Run sets** (`RUN_SET` in the configuration cell; run them in separate sessions to use several accounts):
+
+| `RUN_SET` | runs | pairs each |
+|---|---|---|
+| `ablation` | R1 plain, R2 +DK, R3 +SU, R4 +DA, R5 DK+SU+DA, R6 = R5 on bge-reranker-base | 40k |
+| `operators` | each augmentation operator alone, and `all` | 20k |
+| `label_eff` | R1 and R5 on 2k and 10k pairs (the 40k points come from `ablation`) | 2k, 10k |
+| `final` | the best ablation run by **val** F0.5 (attach the ablation output), trained on `DITTO_N_FINAL` pairs, **saves scores and weights** | 160k |
+| `all` | all of the above, then `final` | |
+
+Only the `final` run writes `scores/` and `models/`, so notebook 07 (fusion) and 08 (demo) get exactly one
+Ditto expert. R0, the plain-text reference, is `06b_ce_bge_full_finetune`. Outputs: `ditto_ablation.csv`,
+`ditto_label_efficiency.png`, `ditto_lengths.csv`, plus the usual `results/`, `preds/`.
+""", "GPU T4", "the dataset, the output of `03_candidates`, and (recommended) the output of `02_parser_bilstm_crf`; for `final`, also the output of the `ablation` run", [
+    setup_cell(BASE_PKGS + [("transformers", "transformers"), ("sentencepiece", "sentencepiece"), ("google.protobuf", "protobuf"), ("matplotlib", "matplotlib")]),
+    config_cell("load", "RUN_SET='ablation', DITTO_LEN=96, DITTO_BS=32, DITTO_EVAL_BS=256, DITTO_N_ABL=40_000, DITTO_N_OP=20_000, DITTO_N_LOW=[2_000, 10_000], DITTO_N_FINAL=160_000, DITTO_MIN_STEPS=600, DITTO_SU_WORDS=16, DITTO_ALPHA=0.8, DITTO_FINAL='auto'",
+                "DITTO_N_ABL=3000, DITTO_N_OP=2000, DITTO_N_LOW=[500, 1000], DITTO_N_FINAL=4000, DITTO_MIN_STEPS=20"),
+    DATA_CELL, METRIC_CELL, PAIRS_CELL, RULES_CELL, HF_CELL,
+    code(DITTO_SRC), code(DITTO_PARSE), code(DITTO_RUNS), code(DITTO_EXEC), code(DITTO_SUMMARY), code(DITTO_LEN),
+])
+
 # =============================================================================== 07 fusion + results
 write("07_moe_fusion_and_results", "07 · Mixture of Experts over all matchers + final results", r"""
 **Course topic: Mixture of Experts.** The matchers from 04–06 are the **experts**. A gating network
@@ -1306,10 +1684,10 @@ for p in find_all('results/*.json') + sorted((OUT / 'results').glob('*.json')):
     r = json.load(open(p)); RES[r['method']] = r
 R = pd.DataFrame(RES.values())
 if R.quick.astype(str).str.lower().eq('true').any(): print('NOTE: some rows come from QUICK_RUN notebooks:', R[R.quick.astype(str).str.lower() == 'true'].method.tolist())
-order = {s: i for i, s in enumerate(['5 Classical baseline', '6 RNN / LSTM', '7 Transformers', '8 Fusion'])}
+order = {s: i for i, s in enumerate(['5 Classical baseline', '6 RNN / LSTM', '7 Transformers', '7b Ditto ablation', '8 Fusion'])}
 R = R.assign(o=R.section.map(order)).sort_values(['o', 'test_f05'], ascending=[True, False]).drop(columns='o')
 cols = [c for c in ['section', 'method', 'val_f05', 'test_f05', 'test_P', 'test_R', 'test_f05_US', 'test_f05_India',
-                    'test_singleton_acc', 'params', 'train_min', 'threshold'] if c in R]
+                    'test_pair_f1', 'test_singleton_acc', 'params', 'train_min', 'threshold'] if c in R]
 print(R[cols].to_string(index=False)); R[cols].to_csv(OUT / 'final_results.csv', index=False)
 bl_p = find_one('blocking.json'); bl = json.load(open(bl_p)) if bl_p else {}
 if bl:
@@ -1327,6 +1705,7 @@ with open(OUT / 'final_results.md', 'w') as f:
             except ImportError: txt = d.to_string(index=False)
             f.write(f'\n### {name}\n\n{txt}\n'); print(f'\n{name}:'); print(d.to_string(index=False))
 
+R = R[R.section != '7b Ditto ablation']                      # the ablation runs have their own table (06g)
 fig, ax = plt.subplots(figsize=(10, 0.45 * len(R) + 1.2))
 colors = {'5 Classical baseline': '#8c8c8c', '6 RNN / LSTM': '#4C78A8', '7 Transformers': '#F58518', '8 Fusion': '#54A24B'}
 ax.barh(R.method, R.test_f05, color=[colors.get(s, '#999') for s in R.section])
@@ -1350,7 +1729,7 @@ from rapidfuzz.process import cpdist
 import lightgbm as lgb
 try: from torchcrf import CRF
 except ImportError: CRF = None
-''' + PARSER_SRC + EMBED_SRC + GBM_FEAT_SRC + RNN_CLASS_SRC + CE_CLASS_SRC + GATE_FEAT_SRC + GATED_MOE_SRC + r'''
+''' + PARSER_SRC + EMBED_SRC + GBM_FEAT_SRC + RNN_CLASS_SRC + CE_CLASS_SRC + GATE_FEAT_SRC + GATED_MOE_SRC + DITTO_SRC + r'''
 _ovr = os.environ.get('NLP_ER_MODEL_OVERRIDE')                     # local smoke test only
 DEMO = dict(
     TOKENIZERS={'mBERT (WordPiece)': 'google-bert/bert-base-multilingual-cased',
@@ -1438,6 +1817,15 @@ for _p in (find_all('models/*.ce.pt') if DEMO['LOAD_CE'] else []):
     LIVE[_ck['method']] = dict(type='ce', model=_m.to(DEVICE).eval(), kind=_ck['kind'], max_len=_ck['max_len'], amp=_ck['amp'],
                                tok=AutoTokenizer.from_pretrained(_ck['model']))
     del _ck; gc.collect()
+for _p in (find_all('models/*.ditto.pt') if DEMO['LOAD_CE'] else []):          # 06g: the final Ditto model
+    _ck = torch.load(_p, map_location='cpu', weights_only=False)
+    _tk = ditto_tokenizer(_ck['backbone']); _m = DittoModel(_ck['backbone'], _tk, pretrained=False)
+    _own = _m.state_dict(); _bad = [k for k in _ck['state_dict'] if k not in _own]
+    assert not _bad, f"{_ck['method']}: {len(_bad)} saved weights do not fit the model, e.g. {_bad[:3]}"
+    _m.load_state_dict({k: v.to(_own[k].dtype) for k, v in _ck['state_dict'].items()})
+    LIVE[_ck['method']] = dict(type='ditto', model=_m.to(DEVICE).eval(), tok=_tk, cfg=_ck['cfg'], max_len=_ck['max_len'],
+                               summ=Summarizer(_ck['cfg']['dk'], _ck['su_words'], _ck['idf'], _ck['default_idf']))
+    del _ck; gc.collect()
 ZS = 'CE bge-reranker-base zero-shot'
 if DEMO['LOAD_CE'] and DEMO['ZERO_SHOT_CE'] and ZS not in LIVE:
     LIVE[ZS] = dict(type='ce', model=build_ce('seq', DEMO['ZERO_SHOT_CE']).to(DEVICE).eval(), kind='seq', max_len=CFG['MAX_LEN'],
@@ -1465,7 +1853,7 @@ DEMO_PIPE = r'''
 import html as _html
 SHORT = [('CE IndicBERTv2 full fine-tune', 'IndicBERTv2'), ('CE mDeBERTa-v3 full fine-tune (fp32)', 'mDeBERTa'),
          ('GBM (string + parsed-address features)', 'LightGBM'), ('Siamese char-', ''), (' (vanilla)', ''),
-         ('CE bge-reranker-base ', 'bge '), ('full fine-tune', 'full FT'), ('+ MoE head (top-2 of 4)', 'MoE head'), ('LoRA r=16', 'LoRA')]
+         ('CE bge-reranker-base ', 'bge '), ('Ditto final ', 'Ditto '), ('full fine-tune', 'full FT'), ('+ MoE head (top-2 of 4)', 'MoE head'), ('LoRA r=16', 'LoRA')]
 def short(m):
     for a, b in SHORT: m = m.replace(a, b)
     return m
@@ -1529,6 +1917,11 @@ def logit_np(p): p = np.clip(p, 1e-6, 1 - 1e-6); return np.log(p / (1 - p))
 @torch.no_grad()
 def live_logits(m, S, Ps):
     L = LIVE[m]
+    if L['type'] == 'ditto':                                  # serialize with the same DK / SU settings as in training
+        dk, su = L['cfg']['dk'], L['cfg']['su']; summ = L['summ'] if su else None
+        with use_rec(S): txt = [serialize(attrs_of(j, dk, summ), dk) for j in range(len(S))]
+        enc = L['tok']([txt[0]] * (len(S) - 1), txt[1:], truncation=True, max_length=L['max_len'], padding=True, return_tensors='pt').to(DEVICE)
+        with autocast(True): return L['model'](enc).float().cpu().numpy(), None
     if L['type'] == 'gbm':
         with use_rec(S): X = pair_features(Ps)
         return logit_np(GBM.predict(X[GBM_META['features']])), None
@@ -1637,6 +2030,33 @@ def header(R):
     return (f'<div class="banner"><b>{esc(r["name"])}</b><br>{esc(r["addr"]) or "<i>(no address)</i>"}<br>'
             f'<span class="muted">source {esc(r["src"])} · country {esc(r["country"])} · script {esc(r["script"])} · id {esc(r["id"])}</span></div>')
 
+def ditto_html(R):
+    D = [m for m in LIVE if LIVE[m]['type'] == 'ditto']
+    if not D: return ''
+    m = D[0]; L = LIVE[m]; dk, su = L['cfg']['dk'], L['cfg']['su']
+    if 'S' in R:
+        S = R['S']; j = pick_final(R)[0]; j = 0 if j is None else j; rows = [(0, 'this record'), (1 + j, 'chosen candidate')]
+    else:
+        S = R['q'].copy(); F_ = fields_for(S.id.values[0], S.addr.values[0])
+        for k in P_COLS: S[k] = F_[k]
+        rows = [(0, 'this record')]
+    h = (f'<h3>What Ditto reads: {esc(short(m))}</h3><p class="muted">Each record is serialized as <code>[COL] column [VAL] words</code>. '
+         + ('Domain knowledge: normalised words and the parser\'s typed address spans; numbers get a <code>[NUM]</code> marker (yellow). ' if dk else 'Plain name and address. ')
+         + ('Summarisation: grey struck-through words are dropped (lowest TF-IDF) to fit the budget.' if su else 'No summarisation: a long pair is cut at the end.') + '</p>')
+    with use_rec(S):
+        for ix, label in rows:
+            full = attrs_of(ix, dk); keep = L['summ'].select(full) if su else None; lines = []
+            for ai, (c, ws) in enumerate(full):
+                chips = ''
+                for wi, w in enumerate(ws):
+                    off = keep is not None and (ai, wi) not in keep
+                    if dk and not off and any(ch.isdigit() for ch in w): chips += chip('[NUM]', 'chg')
+                    chips += chip(w, 'oov' if off else ('chg' if (dk and any(ch.isdigit() for ch in w)) else ''))
+                lines.append(f'<div><b>[COL] {esc(c)} [VAL]</b> {chips}</div>')
+            n_tok = len(L['tok'](serialize(attrs_of(ix, dk, L['summ'] if su else None), dk))['input_ids'])
+            h += f'<h4>{label}: {esc(S.name.values[ix])} <span class="muted">({n_tok} tokens)</span></h4>' + ''.join(lines)
+    return h
+
 def panel_tokens(R):
     q = R['q'].iloc[0]; h = header(R)
     for field, s in (('Name', q['name']), ('Address', q['addr'])):
@@ -1656,6 +2076,7 @@ def panel_tokens(R):
     h += '<h3>What the models read</h3>' + tbl(['model', 'input text'], [
         ['TF-IDF', esc(q['bl_text'])], ['e5 bi-encoder', esc('query: ' + q['ce_text'])],
         ['cross-encoders', esc(q['ce_text']) + ' <span class="muted">[SEP] candidate S1</span>'], ['Siamese RNNs (characters)', esc(q['ltext'])]])
+    h += ditto_html(R)
     return box(h)
 
 def tag_chips(toks, tags):
