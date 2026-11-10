@@ -1,0 +1,16 @@
+section,method,val_f05,test_f05,test_P,test_R,test_f05_US,test_f05_India,test_singleton_acc,params,train_min,threshold
+5 Classical baseline,LightGBM (string + parsed-address features),0.8491,0.8420,0.8842,0.7120,0.8654,0.8198,0.9824,150000,1.8,0.54
+6 RNN / LSTM,Siamese char-BiRNN (vanilla),0.7012,0.6950,0.7410,0.5620,0.7240,0.6680,0.9710,120000,2.5,0.48
+6 RNN / LSTM,Siamese char-BiGRU,0.7689,0.7620,0.8120,0.6140,0.7890,0.7360,0.9765,350000,4.2,0.52
+6 RNN / LSTM,Siamese char-BiLSTM,0.7745,0.7680,0.8190,0.6210,0.7940,0.7430,0.9772,480000,5.1,0.52
+7 Transformers,CE bge-reranker-base zero-shot,0.7460,0.7410,0.7840,0.6120,0.7680,0.7150,0.9750,278000000,0.0,0.50
+7 Transformers,CE bge-reranker-base LoRA (r=16),0.8682,0.8620,0.8980,0.7450,0.8820,0.8430,0.9860,1200000,8.5,0.56
+7 Transformers,CE bge-reranker-base full fine-tune,0.8741,0.8680,0.9040,0.7510,0.8890,0.8480,0.9871,278000000,14.2,0.58
+7 Transformers,CE bge-reranker-base + MoE head,0.8824,0.8765,0.9120,0.7620,0.8960,0.8580,0.9882,290000000,16.5,0.58
+7 Transformers,CE IndicBERTv2 full fine-tune,0.8760,0.8710,0.8950,0.7850,0.8410,0.8990,0.9845,278000000,13.8,0.55
+7 Transformers,CE mDeBERTa-v3 full fine-tune (fp32),0.8912,0.8860,0.9180,0.7820,0.9020,0.8710,0.9890,278000000,18.0,0.60
+8 Fusion,Mean of 8 calibrated experts,0.8804,0.8742,0.9080,0.7610,0.8940,0.8550,0.9880,-,0.1,0.56
+8 Fusion,Logistic-regression stacking,0.8851,0.8790,0.9140,0.7640,0.8990,0.8600,0.9885,8,0.1,0.58
+8 Fusion,MoE, constant gate (ablation),0.8875,0.8815,0.9160,0.7680,0.9010,0.8630,0.9888,18,0.5,0.58
+8 Fusion,LightGBM stacking (same inputs),0.8930,0.8871,0.9210,0.7740,0.9070,0.8680,0.9892,150000,0.8,0.60
+8 Fusion,Gated Mixture of Experts,0.8984,0.8924,0.9265,0.7812,0.9120,0.8735,0.9904,450,1.2,0.58

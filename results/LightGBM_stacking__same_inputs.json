@@ -1,0 +1,14 @@
+{
+ "section": "8 Fusion",
+ "method": "LightGBM stacking (same inputs)",
+ "val_f05": 0.893,
+ "test_f05": 0.8871,
+ "test_P": 0.921,
+ "test_R": 0.774,
+ "test_f05_US": 0.907,
+ "test_f05_India": 0.868,
+ "test_singleton_acc": 0.9892,
+ "params": 150000,
+ "train_min": 0.8,
+ "threshold": 0.6
+}

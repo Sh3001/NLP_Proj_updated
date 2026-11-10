@@ -1,0 +1,14 @@
+{
+ "section": "8 Fusion",
+ "method": "MoE, constant gate (ablation)",
+ "val_f05": 0.8875,
+ "test_f05": 0.8815,
+ "test_P": 0.916,
+ "test_R": 0.768,
+ "test_f05_US": 0.901,
+ "test_f05_India": 0.863,
+ "test_singleton_acc": 0.9888,
+ "params": 18,
+ "train_min": 0.5,
+ "threshold": 0.58
+}

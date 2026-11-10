@@ -257,10 +257,10 @@ for m, r in RES.items():
     if m in CFG['EXCLUDE_EXPERTS']: continue
     f = {s: find_one(f'scores/{safe_name(m)}_{s}.npy') for s in ('B', 'val', 'test')}
     if all(f.values()):
-        arr = {s: np.load(f[s]) for s in f}
-        if all(len(arr[s]) == len(PAIRS[s]) for s in arr):
+        arr = {s: np.asarray(np.load(f[s]), dtype=np.float32).reshape(-1) for s in f}
+        if all(len(arr[s]) == len(PAIRS[s]) for s in arr) and all(np.all(np.isfinite(arr[s])) for s in arr):
             EXPERTS.append(m); [Z[s].append(arr[s]) for s in arr]
-        else: print('skip (pair count differs, other QUICK_RUN setting?):', m)
+        else: print('skip (pair count differs or non-finite values, other QUICK_RUN setting?):', m)
 print('experts:', EXPERTS)
 assert len(EXPERTS) >= 2, 'attach the outputs of at least two model notebooks'
 Z = {s: np.stack(v, 1) for s, v in Z.items()}
@@ -344,8 +344,9 @@ short = lambda e: e.replace('CE bge-reranker-base', 'CE').replace(' (string + pa
 W = pd.DataFrame(WT, columns=[short(e) for e in EXPERTS]); P = PAIRS['test']
 W['script'] = REC.script.values[P.qi.values]; W['country'] = REC.country.values[P.qi.values]
 GATE_BY_SCRIPT = W.groupby('script').mean(numeric_only=True); GATE_BY_SCRIPT.to_csv(OUT / 'moe_gate_by_script.csv')
+GATE_BY_COUNTRY = W.groupby('country').mean(numeric_only=True); GATE_BY_COUNTRY.to_csv(OUT / 'moe_gate_by_country.csv')
 print('\nmean gate weight per expert, by script of the S2/S3 record:'); print(GATE_BY_SCRIPT.round(3).T.to_string())
-print('\nby country (the gate never sees this label):'); print(W.groupby('country').mean(numeric_only=True).round(3).T.to_string())
+print('\nby country (the gate never sees this label):'); print(GATE_BY_COUNTRY.round(3).T.to_string())
 
 # ==== Final results table + charts ====
 import matplotlib.pyplot as plt
@@ -382,7 +383,11 @@ ax.set_xlim(max(0.0, R.test_f05.min() - 0.02), 1.0); ax.invert_yaxis()
 for yy, v in enumerate(R.test_f05): ax.text(v + 0.001, yy, f'{v:.4f}', va='center', fontsize=8)
 ax.set_xlabel('test macro F0.5'); ax.set_title('Held-out test split (data/small)')
 plt.tight_layout(); plt.savefig(OUT / 'results_test_f05.png', dpi=150); plt.show()
-GATE_BY_SCRIPT.T.plot.bar(figsize=(11, 4), title='MoE gate weight per expert, by script'); plt.ylabel('mean weight')
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 4.5))
+GATE_BY_SCRIPT.T.plot.bar(ax=ax1, title='MoE gate weight per expert, by script')
+ax1.set_ylabel('mean weight'); ax1.grid(axis='y', alpha=0.3)
+GATE_BY_COUNTRY.T.plot.bar(ax=ax2, title='MoE gate weight per expert, by country (post-hoc)')
+ax2.set_ylabel('mean weight'); ax2.grid(axis='y', alpha=0.3)
 plt.tight_layout(); plt.savefig(OUT / 'moe_gates.png', dpi=150); plt.show()
 
 # ---- Download: pack this notebook's output into one zip --------------------------------------

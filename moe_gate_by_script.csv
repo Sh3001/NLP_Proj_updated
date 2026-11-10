@@ -1,0 +1,5 @@
+script,LightGBM,Siamese BiGRU,Siamese BiLSTM,CE zero-shot,CE LoRA (r=16),CE full fine-tune,CE + MoE head,CE IndicBERTv2 full fine-tune,CE mDeBERTa-v3 full fine-tune (fp32)
+latin,0.36,0.02,0.04,0.01,0.11,0.32,0.08,0.03,0.03
+devanagari,0.08,0.03,0.05,0.01,0.04,0.18,0.13,0.40,0.08
+malayalam,0.06,0.03,0.04,0.01,0.03,0.19,0.14,0.42,0.08
+other_indic,0.10,0.04,0.06,0.02,0.05,0.18,0.12,0.35,0.08
