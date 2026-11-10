@@ -299,13 +299,16 @@ STREET_WORDS = {'road', 'rd', 'street', 'st', 'lane', 'ln', 'drive', 'dr', 'aven
 LANDMARK_WORDS = {'near', 'nr', 'opp', 'opposite', 'behind', 'beside', 'next', 'adjacent', 'adj', 'infront', 'facing', 'besides'}
 HOUSE_WORDS = {'no', 'no.', 'h.no', 'h.no.', 'hno', 'plot', 'door', 'flat', 'house', 'shop', 'kh', 'survey', 'sy', 'unit',
                'apt', 'suite', 'ste', '#', 'bldg', 'building', 'floor', 'fl', 'khasra', 'ward', 'room', 'block'}
+UNIT_WORDS = {'fl', 'floor', 'suite', 'ste', 'unit', 'apt', 'room', 'flat', 'door', 'shop', 'bldg', 'building', '#'}   # unit/floor parts
 HOUSE_NAME_END = {'house', 'bhavan', 'villa', 'nivas', 'manzil'}      # Kerala-style house names
 POST_RE = re.compile(r'^\d{6}$|^\d{5}(-\d{4})?$')
+
+NULL_TOKS = {'null', '<null>', 'n/a', 'none', 'nan', '<na>'}      # missing-value markers in the raw addresses
 
 def addr_tokens(a):
     a = unicodedata.normalize('NFKC', a)
     if not a.isascii(): a = romanise(a)
-    return re.findall(r',|[^\s,]+', a.lower())[:40]
+    return [t for t in re.findall(r',|[^\s,]+', a.lower()) if t not in NULL_TOKS][:40]
 
 def _is_post(t): return bool(POST_RE.match(t.strip('-')))
 _last, _any = collections.Counter(), collections.Counter()
@@ -315,8 +318,11 @@ for a in REC.addr.values[REC.split.values == 'train']:        # state spellings 
     comps = [c for c in comps if c and not any(ch.isdigit() for ch in c)]
     for c in comps: _any[c] += 1
     if comps: _last[comps[-1]] += 1
-STATE_VOCAB = {c for c, n in _last.items() if n >= 30 and n / _any[c] >= 0.9 and len(c.split()) <= 3}
-print(len(STATE_VOCAB), 'state spellings, e.g.', sorted(STATE_VOCAB)[:15])
+# share >= 0.6, not 0.9: ~10-14 % of addresses have shuffled components ('61022 Holly Court, OR, Bend'), so real states
+# are last in only 86-90 % of their occurrences. On train, every component with share >= 0.5 is a state or a state
+# abbreviation; city names stay below 0.45 ('washington' 0.44, 'delhi' 0.32 are both).
+STATE_VOCAB = {c for c, n in _last.items() if n >= 30 and n / _any[c] >= 0.6 and len(c.split()) <= 3}
+print(len(STATE_VOCAB), 'state spellings:', sorted(STATE_VOCAB, key=lambda c: -_last[c]))
 
 def rule_tags(toks):
     tags = ['LOCALITY'] * len(toks); comps, cur = [], []
@@ -335,19 +341,28 @@ def rule_tags(toks):
             for i in c[:j]: tags[i] = 'STATE'
             tail -= 1; continue
         break
-    if tail >= 2:                                    # city = the component before state/postcode (or the last one)
-        for i in comps[tail - 1]: tags[i] = 'CITY'
-        body = comps[:tail - 1]
+    # city = the last component before the trailing state/postcode that has no digits and is not a state
+    # ('BRIGHAM CITY, UT, 612 675' -> brigham city, not '612 675')
+    k = next((k for k in range(tail - 1, -1, -1) if not any(ch.isdigit() for i in comps[k] for ch in toks[i])
+              and ' '.join(toks[i] for i in comps[k]).strip(' -') not in STATE_VOCAB), None)
+    if tail >= 2 and k is not None:
+        for i in comps[k]: tags[i] = 'CITY'
+        body = comps[:k] + comps[k + 1:tail]
     else:
         body = comps[:tail]
     for ci, c in enumerate(body):
         w = [toks[i] for i in c]
+        if ' '.join(w).strip(' -') in STATE_VOCAB:   # a state that is not at the end (shuffled components)
+            for i in c: tags[i] = 'STATE'
+            continue
         if ci == 0 and len(w) > 1 and w[-1] in HOUSE_NAME_END:
             for i in c: tags[i] = 'HOUSE'
             continue
         lab = 'LANDMARK' if w[0] in LANDMARK_WORDS else ('STREET' if any(x in STREET_WORDS for x in w) else 'LOCALITY')
         start = 0
-        if ci == 0:
+        # leading house-number / unit tokens: in the first component, and in any component that starts with a unit word
+        # ('fl 1', 'suite no.889 valamkottil towers' -> HOUSE only for 'suite no.889')
+        if ci == 0 or (w[0].rstrip('.') in UNIT_WORDS and any(ch.isdigit() for x in w for ch in x)):
             while start < len(c) and (any(ch.isdigit() for ch in w[start]) or w[start] in HOUSE_WORDS):
                 tags[c[start]] = 'HOUSE'; start += 1
         for i in c[start:]: tags[i] = lab
