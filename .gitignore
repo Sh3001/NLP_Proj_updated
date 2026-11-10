@@ -6,3 +6,4 @@ __pycache__/
 models/
 .ipynb_checkpoints/
 extra/
+analysis/out_script/error_examples.csv

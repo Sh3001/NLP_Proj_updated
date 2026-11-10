@@ -1,0 +1,31 @@
+{
+ "models": [
+  "Siamese char-BiLSTM",
+  "Siamese char-BiGRU",
+  "Siamese char-BiRNN (vanilla)",
+  "CE IndicBERTv2 full fine-tune"
+ ],
+ "check": [
+  [
+   "Siamese char-BiLSTM",
+   0.9833493170673319,
+   0.98335
+  ],
+  [
+   "Siamese char-BiGRU",
+   0.9819656434422234,
+   0.98197
+  ],
+  [
+   "Siamese char-BiRNN (vanilla)",
+   0.9747453821455023,
+   0.97475
+  ],
+  [
+   "CE IndicBERTv2 full fine-tune",
+   0.9761145143414616,
+   0.97611
+  ]
+ ],
+ "errors_model": "Siamese char-BiLSTM"
+}

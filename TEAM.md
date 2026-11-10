@@ -45,6 +45,10 @@ GPU time is limited, so run the notebooks in this order. The first tier alone gi
 |---|---|---|
 | [`akshatiit/er-small`](https://www.kaggle.com/datasets/akshatiit/er-small) | `data/small` splits (train / val / test / test_labels), 68 MB | every notebook |
 | [`akshatiit/er-03-output`](https://www.kaggle.com/datasets/akshatiit/er-03-output) | output of `03_candidates`: candidate pairs (`prep/`), blocking numbers, fine-tuned e5, 420 MB | 04, 05a–c, 06a–f, 07, 08 |
+| [`rishikharya/er-05a-output`](https://www.kaggle.com/datasets/rishikharya/er-05a-output) | output of `05a_siamese_bilstm` (scores, preds, model, diagnostics), 7 MB | 07, 08 |
+| [`rishikharya/er-05b-output`](https://www.kaggle.com/datasets/rishikharya/er-05b-output) | output of `05b_siamese_bigru`, 7 MB | 07, 08 |
+| [`rishikharya/er-05c-output`](https://www.kaggle.com/datasets/rishikharya/er-05c-output) | output of `05c_siamese_birnn`, 7 MB | 07, 08 |
+| [`rishikharya/er-06e-output`](https://www.kaggle.com/datasets/rishikharya/er-06e-output) | output of `06e_ce_indicbert` (scores, preds, fine-tuned weights fp16), 560 MB | 07, 08 |
 
 Both are public. In your notebook: **Add Input → Datasets**, search for `er-small` / `er-03-output` (or
 paste the link). No upload and no permission needed. Your Kaggle account must be phone-verified, or
