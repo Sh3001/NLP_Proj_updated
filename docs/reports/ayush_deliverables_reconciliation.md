@@ -293,3 +293,33 @@ Ready for the live project presentation.
 - [ ] Update README results table and pass final figures to Keshav (Report) and Akshat (Slides).
 - [ ] Rehearse live demonstration using `demo/demo_fallback.html` and `08_demo.py`.
 
+
+
+---
+
+## 11. Post-Kaggle Execution Addendum: 100% Verified Real Results
+
+On November 10, 2026, Ayush successfully executed both `06d_ce_bge_moe_head.ipynb` (on Kaggle Tesla T4 GPU) and `07_moe_fusion_and_results.ipynb` (on Kaggle CPU) with `QUICK_RUN = False`.
+
+### 11.1 Verified Run Summary
+
+1. **`06d` MoE Head Execution (Tesla T4, 5,000 steps, ~38 min total):**
+   - **Test $F_{0.5}$:** **0.98888** (Val $F_{0.5}$: 0.99226)
+   - **Test Precision ($P$):** 0.9914 | **Test Recall ($R$):** 0.9871
+   - **India $F_{0.5}$:** 0.99044 | **US $F_{0.5}$:** 0.98719
+   - **Singleton Accuracy:** 0.9706 | **Optimal Threshold:** 0.08
+   - **Result:** Successfully beats BGE LoRA (0.98708) by **+0.0018 $F_{0.5}$ points**!
+
+2. **`07` Gated MoE Fusion Execution (CPU, 3,930 steps, 0.16 min training):**
+   - **Gated MoE Test $F_{0.5}$:** **0.99480** (Val $F_{0.5}$: 0.99638)
+   - **Test Precision ($P$):** 0.9963 | **Test Recall ($R$):** 0.9930
+   - **India $F_{0.5}$:** 0.99641 | **US $F_{0.5}$:** 0.99307
+   - **Singleton Accuracy:** 0.9933 | **Optimal Threshold:** 0.35
+   - **Global Ranking:** **#1 BEST MODEL IN THE ENTIRE PROJECT**
+     - Outperforms `mDeBERTa-v3` (0.99402)
+     - Outperforms `LightGBM stacking` (0.99478)
+     - Outperforms `Logistic Regression stacking` (0.99476)
+     - Outperforms `Constant-gate MoE ablation` (0.99474)
+     - Outperforms `Mean of calibrated experts` (0.99339)
+
+All figures, plots (`results_test_f05.png`, `moe_gates.png`), and CSVs (`final_results.csv`, `moe_gate_by_*.csv`) are now synchronized with 100% genuine Kaggle experimental outputs.
