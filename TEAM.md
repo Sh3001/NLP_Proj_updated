@@ -47,7 +47,11 @@ GPU time is limited, so run the notebooks in this order. The first tier alone gi
 | [`akshatiit/er-03-output`](https://www.kaggle.com/datasets/akshatiit/er-03-output) | output of `03_candidates`: candidate pairs (`prep/`), blocking numbers, fine-tuned e5, 420 MB | 04, 05a–c, 06a–f, 07, 08 |
 | [`xenoncipher/er-02-output`](https://www.kaggle.com/datasets/xenoncipher/er-02-output) | output of `02_parser_bilstm_crf`: `prep/parsed_fields.parquet`, parser model | 04, 08 |
 | [`xenoncipher/er-04-output`](https://www.kaggle.com/datasets/xenoncipher/er-04-output) | output of `04_gbm_baseline` (run with 02's parsed fields): scores, results, LightGBM model | 07, 08 |
+| [`rishikharya/er-05a-output`](https://www.kaggle.com/datasets/rishikharya/er-05a-output) | output of `05a_siamese_bilstm` (scores, preds, model, diagnostics), 7 MB | 07, 08 |
+| [`rishikharya/er-05b-output`](https://www.kaggle.com/datasets/rishikharya/er-05b-output) | output of `05b_siamese_bigru`, 7 MB | 07, 08 |
+| [`rishikharya/er-05c-output`](https://www.kaggle.com/datasets/rishikharya/er-05c-output) | output of `05c_siamese_birnn`, 7 MB | 07, 08 |
 | [`xenoncipher/er-06c-output`](https://www.kaggle.com/datasets/xenoncipher/er-06c-output) | output of `06c_ce_bge_lora`: scores, results, LoRA adapters | 07, 08 |
+| [`rishikharya/er-06e-output`](https://www.kaggle.com/datasets/rishikharya/er-06e-output) | output of `06e_ce_indicbert` (scores, preds, fine-tuned weights fp16), 560 MB | 07, 08 |
 | [`xenoncipher/er-06f-output`](https://www.kaggle.com/datasets/xenoncipher/er-06f-output) | output of `06f_ce_mdeberta`: scores, results, fine-tuned weights | 07, 08 |
 
 Both are public. In your notebook: **Add Input → Datasets**, search for `er-small` / `er-03-output` (or
