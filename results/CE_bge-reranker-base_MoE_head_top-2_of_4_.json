@@ -1,0 +1,15 @@
+{
+ "section": "7 Transformers",
+ "method": "CE bge-reranker-base + MoE head (top-2 of 4)",
+ "threshold": 0.08,
+ "val_f05": 0.99226,
+ "test_f05": 0.98888,
+ "test_P": 0.9914,
+ "test_R": 0.9871,
+ "test_singleton_acc": 0.9706,
+ "quick": false,
+ "test_f05_India": 0.99044,
+ "test_f05_US": 0.98719,
+ "params": "279M (100.0% trained)",
+ "train_min": 20.0
+}

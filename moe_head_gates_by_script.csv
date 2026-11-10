@@ -1,0 +1,5 @@
+script,expert 0,expert 1,expert 2,expert 3,is_match_top1
+devanagari,0.215,0.220,0.234,0.331,0.2
+latin,0.215,0.222,0.235,0.328,0.2
+malayalam,0.215,0.222,0.234,0.329,0.2
+other_indic,0.210,0.218,0.230,0.342,0.2

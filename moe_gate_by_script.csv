@@ -1,0 +1,5 @@
+script,GBM,CE LoRA r=16,Siamese char-BiLSTM,Siamese char-BiGRU,CE + MoE head (top-2 of 4),CE IndicBERTv2 full fine-tune,CE mDeBERTa-v3 full fine-tune (fp32)
+devanagari,0.708,0.005,0.012,0.006,0.005,0.005,0.260
+latin,0.562,0.005,0.015,0.007,0.005,0.005,0.400
+malayalam,0.702,0.002,0.003,0.002,0.002,0.002,0.286
+other_indic,0.844,0.001,0.001,0.001,0.001,0.001,0.152

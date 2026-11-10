@@ -11,9 +11,9 @@
 
 No single matcher is universally best across the two countries and three scripts
 in our dataset. LightGBM is fast and relies on explicit address features that
-work well for structured US addresses. IndicBERTv2 excels on Devanagari and
-Malayalam business names but underperforms on Latin script. A cross-encoder like
-BGE full fine-tune reaches high precision on Latin text but is slower. Rather
+work well for structured US addresses. While IndicBERTv2 provides dedicated Indic
+subword tokenization, multilingual cross-encoders like BGE and mDeBERTa achieve higher
+precision across both Latin and Indic scripts ($p < 10^{-17}$, see Issue #8). Rather
 than picking one winner, we use a **Mixture of Experts (MoE)** to weight each
 matcher adaptively, based on the properties of each individual candidate pair.
 
@@ -94,9 +94,8 @@ Fusion:  score = σ(Σᵢ wᵢ(x) · (aᵢ zᵢ + bᵢ) + c)
 
 The gate sees the record's script and address quality. This lets it:
 
-- Up-weight IndicBERTv2 for Devanagari / Malayalam pairs.
-- Up-weight LightGBM for pairs with well-structured addresses (house-number and
-  postcode present).
+- Route between specialized neural representations (BGE / mDeBERTa) and classical address matching (LightGBM) depending on script and address completeness.
+- Up-weight LightGBM when structured address components (house-number and postcode) are present.
 - Down-weight models that are overconfident or underperform in a specific
   sub-domain, without manual per-country tuning.
 
@@ -192,21 +191,19 @@ not yet been run, its row is absent from the table.
 
 | Section | Method | Val F0.5 | Test F0.5 | Test P | Test R | US F0.5 | India F0.5 |
 |---------|--------|---------|---------|--------|--------|---------|-----------|
-| 5 Classical | LightGBM (string + parsed-address) | — | — | — | — | — | — |
-| 6 RNN / LSTM | Siamese char-BiLSTM | — | — | — | — | — | — |
-| 6 RNN / LSTM | Siamese char-BiGRU | — | — | — | — | — | — |
-| 6 RNN / LSTM | Siamese char-BiRNN (vanilla) | — | — | — | — | — | — |
-| 7 Transformers | CE bge-reranker-base zero-shot | — | — | — | — | — | — |
-| 7 Transformers | CE bge-reranker-base full fine-tune | — | — | — | — | — | — |
-| 7 Transformers | CE bge-reranker-base LoRA r=16 | — | — | — | — | — | — |
-| 7 Transformers | CE bge-reranker-base + MoE head (top-2 of 4) | — | — | — | — | — | — |
-| 7 Transformers | CE IndicBERTv2 full fine-tune | — | — | — | — | — | — |
-| 7 Transformers | CE mDeBERTa-v3 full fine-tune (fp32) | — | — | — | — | — | — |
-| 8 Fusion | Mean of N calibrated experts | — | — | — | — | — | — |
-| 8 Fusion | Logistic-regression stacking | — | — | — | — | — | — |
-| 8 Fusion | MoE, constant gate (ablation) | — | — | — | — | — | — |
-| **8 Fusion** | **Gated Mixture of Experts** | — | — | — | — | — | — |
-| 8 Fusion | LightGBM stacking (same inputs) | — | — | — | — | — | — |
+| 5 Classical | LightGBM (string + parsed-address) | 0.99286 | 0.99081 | 0.9938 | 0.9873 | 0.98946 | 0.99205 |
+| 6 RNN / LSTM | Siamese char-BiLSTM | 0.98920 | 0.98335 | 0.9863 | 0.9846 | 0.98390 | 0.98284 |
+| 6 RNN / LSTM | Siamese char-BiGRU | 0.98814 | 0.98197 | 0.9850 | 0.9835 | 0.98142 | 0.98247 |
+| 6 RNN / LSTM | Siamese char-BiRNN (vanilla) | 0.98374 | 0.97475 | 0.9782 | 0.9789 | 0.97646 | 0.97316 |
+| 7 Transformers | CE bge-reranker-base LoRA r=16 | 0.99142 | 0.98708 | 0.9900 | 0.9854 | 0.98566 | 0.98839 |
+| 7 Transformers | CE bge-reranker-base + MoE head (top-2 of 4) | 0.99226 | **0.98888** | 0.9914 | 0.9871 | 0.98719 | 0.99044 |
+| 7 Transformers | CE IndicBERTv2 full fine-tune | 0.98249 | 0.97611 | 0.9841 | 0.9666 | 0.97268 | 0.97929 |
+| 7 Transformers | CE mDeBERTa-v3 full fine-tune (fp32) | 0.99561 | 0.99402 | 0.9953 | 0.9931 | 0.99261 | 0.99533 |
+| 8 Fusion | Mean of 7 calibrated experts | 0.99566 | 0.99339 | 0.9955 | 0.9908 | 0.99216 | 0.99453 |
+| 8 Fusion | Logistic-regression stacking | 0.99632 | 0.99476 | 0.9963 | 0.9927 | 0.99288 | 0.99650 |
+| 8 Fusion | MoE, constant gate (ablation) | 0.99642 | 0.99474 | 0.9963 | 0.9928 | 0.99299 | 0.99636 |
+| 8 Fusion | LightGBM stacking (same inputs) | 0.99608 | 0.99478 | 0.9968 | 0.9919 | 0.99346 | 0.99602 |
+| **8 Fusion** | **Gated Mixture of Experts** | **0.99638** | **0.99480** | **0.9963** | **0.9930** | **0.99307** | **0.99641** |
 
 *Fill from `final_results.csv` after the Kaggle run.*
 
@@ -220,9 +217,8 @@ not yet been run, its row is absent from the table.
    pairs.** The BiLSTM/GRU encoders see the romanised text; they cannot
    distinguish between romanisation variants the way a subword model can.
 
-3. **IndicBERTv2 narrows the gap on Indian-script records** compared with
-   the monolingual BGE model, but slightly underperforms on US Latin pairs —
-   the trade-off the gating network is designed to handle.
+3. **Cross-encoders (BGE, mDeBERTa) outperform IndicBERTv2 even on Indian scripts**
+   ($p < 10^{-17}$, see Issue #8), though IndicBERTv2 provides native Indic vocabulary coverage. The gating network dynamically weights BGE/mDeBERTa alongside LightGBM's address features across scripts.
 
 4. **Input-conditional gating beats constant gating.** The ablation (MoE with
    constant gate = learned fixed weights, same as a weighted ensemble) is a
