@@ -20,8 +20,9 @@ Test labels are read only inside the final scoring function.
 | `06d_ce_bge_moe_head` | Mixture of Experts (top-2 MoE head) | T4 | dataset, 03 |
 | `06e_ce_indicbert` | Fine-tuning (IndicBERTv2) | T4 | dataset, 03 |
 | `06f_ce_mdeberta` *(optional, slow)* | Fine-tuning (mDeBERTa, fp32) | T4 | dataset, 03 |
+| `06g_ditto` | **Ditto** (Li et al. 2021): Transformers, Fine-tuning, DK / SU / DA ablation | T4 | dataset, 03, 02 (recommended); `final` also needs the `ablation` output |
 | `07_moe_fusion_and_results` | Mixture of Experts (gated fusion) + final table | – | dataset, 03, all of 04–06 (01, 02 optional) |
-| `08_demo` | **Live demo**: one record through all five steps | T4 | dataset, 02, 03, 04, 05a–c, 06a–f, 07 |
+| `08_demo` | **Live demo**: one record through all five steps | T4 | dataset, 02, 03, 04, 05a–c, 06a–g, 07 |
 
 All models are MIT or Apache-2.0: `multilingual-e5-small` (118M), `bge-reranker-base` (278M),
 `IndicBERTv2-MLM-only` (278M), `mdeberta-v3-base` (279M), and the mBERT tokenizer (Apache-2.0).
@@ -101,6 +102,7 @@ ground truth. It runs the **saved models** on the record, so it needs the `model
 | 06b, 06d, 06e | `models/<method>.ce.pt` (trained weights, fp16) | ~560 MB each |
 | 06c | `models/<method>.ce.pt` (LoRA adapters + head only) | ~5 MB |
 | 06f | `models/<method>.ce.pt` (fp32) | ~1.1 GB |
+| 06g (`final` run only) | `models/<method>.ditto.pt` (fp16) | ~560 MB |
 | 07 | `models/moe_fusion.pt` | tiny |
 
 Notebooks that ran **before** this change have no `models/` folder. For those, the demo shows their
@@ -119,6 +121,29 @@ How to run it:
 6. The notebook automatically saves a self-contained fallback HTML file (`demo_fallback.html`) covering
    the four curated demo records. See [`demo/README.md`](../demo/README.md) for the 5-minute presentation
    script, report section, slide deck, and offline fallback HTML.
+
+## Ditto (`06g_ditto`)
+
+Ditto serializes a record pair as `[COL] name [VAL] ... [COL] city [VAL] ...` and fine-tunes a pre-trained
+language model on it. The notebook is an **ablation** of its three optimisations: **DK** (span
+normalisation + the parser's typed address spans), **SU** (TF-IDF summarisation), **DA** (MixDA with 5
+augmentation operators). Set `RUN_SET` in the configuration cell:
+
+| `RUN_SET` | runs | pairs each | time (T4, estimate) |
+|---|---|---|---|
+| `ablation` | R1 plain, R2 +DK, R3 +SU, R4 +DA, R5 DK+SU+DA, R6 = R5 on bge | 40k | ~2 h |
+| `operators` | each augmentation operator, and `all` | 20k | ~1.5 h |
+| `label_eff` | R1 and R5 on 2k and 10k pairs | 2k, 10k | ~1 h |
+| `final` | best ablation run by **val** F0.5 (attach the `ablation` output); saves scores + weights | 160k | ~1.5 h |
+| `all` | all of the above, then `final` | | ~6 h |
+
+Each run also scores the full val and test pair sets (~10 min on a T4), which is part of the times above.
+Run the sets in separate sessions (even on separate accounts); `final` reads the ablation results
+from the attached output, or set `DITTO_FINAL = 'full'` to skip the selection. Only `final` writes
+`scores/` and `models/`, so 07 and 08 get exactly one Ditto expert. Extra outputs: `ditto_ablation.csv`
+(R1–R6 + R0 = `06b`, with pair-level F1 and per-script F0.5), `ditto_label_efficiency.png`,
+`ditto_lengths.csv` (token lengths and truncation rate with and without SU: use it to check that
+`DITTO_LEN` and `DITTO_SU_WORDS` make SU matter), and the operator table.
 
 ## Rough run times (T4, full `data/small`)
 

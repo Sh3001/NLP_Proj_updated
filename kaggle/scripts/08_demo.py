@@ -5,6 +5,13 @@ for mod, pip in [('anyascii', 'anyascii'), ('sklearn', 'scikit-learn'), ('transf
     try: importlib.import_module(mod)
     except ImportError:
         if subprocess.run([sys.executable, '-m', 'pip', 'install', '-q', pip]).returncode != 0: print('WARNING: could not install', pip)
+try:
+    from importlib.metadata import version as _pkg_version
+    if tuple(int(x) for x in _pkg_version('torchao').split('.')[:2]) < (0, 16):
+        subprocess.run([sys.executable, '-m', 'pip', 'uninstall', '-y', '-q', 'torchao']); importlib.invalidate_caches()
+        print('removed old torchao (incompatible with peft)')
+except Exception:
+    pass                                                          # torchao not installed: nothing to do
 import numpy as np, pandas as pd
 from anyascii import anyascii
 import warnings; warnings.filterwarnings('ignore', category=FutureWarning); warnings.filterwarnings('ignore', category=UserWarning)
@@ -253,13 +260,16 @@ STREET_WORDS = {'road', 'rd', 'street', 'st', 'lane', 'ln', 'drive', 'dr', 'aven
 LANDMARK_WORDS = {'near', 'nr', 'opp', 'opposite', 'behind', 'beside', 'next', 'adjacent', 'adj', 'infront', 'facing', 'besides'}
 HOUSE_WORDS = {'no', 'no.', 'h.no', 'h.no.', 'hno', 'plot', 'door', 'flat', 'house', 'shop', 'kh', 'survey', 'sy', 'unit',
                'apt', 'suite', 'ste', '#', 'bldg', 'building', 'floor', 'fl', 'khasra', 'ward', 'room', 'block'}
+UNIT_WORDS = {'fl', 'floor', 'suite', 'ste', 'unit', 'apt', 'room', 'flat', 'door', 'shop', 'bldg', 'building', '#'}   # unit/floor parts
 HOUSE_NAME_END = {'house', 'bhavan', 'villa', 'nivas', 'manzil'}      # Kerala-style house names
 POST_RE = re.compile(r'^\d{6}$|^\d{5}(-\d{4})?$')
+
+NULL_TOKS = {'null', '<null>', 'n/a', 'none', 'nan', '<na>'}      # missing-value markers in the raw addresses
 
 def addr_tokens(a):
     a = unicodedata.normalize('NFKC', a)
     if not a.isascii(): a = romanise(a)
-    return re.findall(r',|[^\s,]+', a.lower())[:40]
+    return [t for t in re.findall(r',|[^\s,]+', a.lower()) if t not in NULL_TOKS][:40]
 
 def _is_post(t): return bool(POST_RE.match(t.strip('-')))
 _last, _any = collections.Counter(), collections.Counter()
@@ -269,8 +279,11 @@ for a in REC.addr.values[REC.split.values == 'train']:        # state spellings 
     comps = [c for c in comps if c and not any(ch.isdigit() for ch in c)]
     for c in comps: _any[c] += 1
     if comps: _last[comps[-1]] += 1
-STATE_VOCAB = {c for c, n in _last.items() if n >= 30 and n / _any[c] >= 0.9 and len(c.split()) <= 3}
-print(len(STATE_VOCAB), 'state spellings, e.g.', sorted(STATE_VOCAB)[:15])
+# share >= 0.6, not 0.9: ~10-14 % of addresses have shuffled components ('61022 Holly Court, OR, Bend'), so real states
+# are last in only 86-90 % of their occurrences. On train, every component with share >= 0.5 is a state or a state
+# abbreviation; city names stay below 0.45 ('washington' 0.44, 'delhi' 0.32 are both).
+STATE_VOCAB = {c for c, n in _last.items() if n >= 30 and n / _any[c] >= 0.6 and len(c.split()) <= 3}
+print(len(STATE_VOCAB), 'state spellings:', sorted(STATE_VOCAB, key=lambda c: -_last[c]))
 
 def rule_tags(toks):
     tags = ['LOCALITY'] * len(toks); comps, cur = [], []
@@ -289,19 +302,28 @@ def rule_tags(toks):
             for i in c[:j]: tags[i] = 'STATE'
             tail -= 1; continue
         break
-    if tail >= 2:                                    # city = the component before state/postcode (or the last one)
-        for i in comps[tail - 1]: tags[i] = 'CITY'
-        body = comps[:tail - 1]
+    # city = the last component before the trailing state/postcode that has no digits and is not a state
+    # ('BRIGHAM CITY, UT, 612 675' -> brigham city, not '612 675')
+    k = next((k for k in range(tail - 1, -1, -1) if not any(ch.isdigit() for i in comps[k] for ch in toks[i])
+              and ' '.join(toks[i] for i in comps[k]).strip(' -') not in STATE_VOCAB), None)
+    if tail >= 2 and k is not None:
+        for i in comps[k]: tags[i] = 'CITY'
+        body = comps[:k] + comps[k + 1:tail]
     else:
         body = comps[:tail]
     for ci, c in enumerate(body):
         w = [toks[i] for i in c]
+        if ' '.join(w).strip(' -') in STATE_VOCAB:   # a state that is not at the end (shuffled components)
+            for i in c: tags[i] = 'STATE'
+            continue
         if ci == 0 and len(w) > 1 and w[-1] in HOUSE_NAME_END:
             for i in c: tags[i] = 'HOUSE'
             continue
         lab = 'LANDMARK' if w[0] in LANDMARK_WORDS else ('STREET' if any(x in STREET_WORDS for x in w) else 'LOCALITY')
         start = 0
-        if ci == 0:
+        # leading house-number / unit tokens: in the first component, and in any component that starts with a unit word
+        # ('fl 1', 'suite no.889 valamkottil towers' -> HOUSE only for 'suite no.889')
+        if ci == 0 or (w[0].rstrip('.') in UNIT_WORDS and any(ch.isdigit() for x in w for ch in x)):
             while start < len(c) and (any(ch.isdigit() for ch in w[start]) or w[start] in HOUSE_WORDS):
                 tags[c[start]] = 'HOUSE'; start += 1
         for i in c[start:]: tags[i] = lab
@@ -484,12 +506,14 @@ class MoEHead(nn.Module):
 
 class CEMoE(nn.Module):
     def __init__(self, name):
-        super().__init__(); self.enc = AutoModel.from_pretrained(name); self.moe = MoEHead(self.enc.config.hidden_size)
+        super().__init__(); self.enc = AutoModel.from_pretrained(name).float(); self.moe = MoEHead(self.enc.config.hidden_size)
     def forward(self, **enc): return self.moe(self.enc(**enc).last_hidden_state[:, 0])
 
 def build_ce(kind, name):
+    # .float(): transformers v5 loads weights in the checkpoint's dtype; mDeBERTa's checkpoint is fp16, and pure-fp16
+    # training gives NaN losses. The master weights must be fp32 (autocast still runs the forward pass in fp16 where AMP is on).
     if kind == 'moe': return CEMoE(name)
-    m = AutoModelForSequenceClassification.from_pretrained(name, num_labels=1, ignore_mismatched_sizes=True)
+    m = AutoModelForSequenceClassification.from_pretrained(name, num_labels=1, ignore_mismatched_sizes=True).float()
     if kind == 'lora':
         from peft import LoraConfig, get_peft_model, TaskType
         m = get_peft_model(m, LoraConfig(task_type=TaskType.SEQ_CLS, r=16, lora_alpha=32, lora_dropout=0.1, target_modules=['query', 'key', 'value']))
@@ -516,6 +540,124 @@ class GatedMoE(nn.Module):
     def forward(self, z, g):
         w = self.gate(g).softmax(-1) if self.input_gate else self.w0.softmax(-1).expand(len(z), -1)
         return (w * (self.a * z + self.b)).sum(-1) + self.c, w
+
+# ==== Ditto (Li et al., VLDB 2021): serialization, DK, SU, DA / MixDA, model ====
+DITTO_COLS = ['house', 'street', 'locality', 'landmark', 'city', 'state', 'postcode']
+P_COLS = ['p_' + c for c in DITTO_COLS]                       # parsed address fields (02, or the rules)
+MARKERS = ['[COL]', '[VAL]', '[NUM]']
+AUG_OPS = ['span_del', 'span_shuffle', 'attr_del', 'attr_shuffle', 'entry_swap']
+_HOUSE_NOISE = set(HOUSE_WORDS) | {'h.no', 'no', '#'}
+
+def norm_house(s):                                            # span normalisation: 'h.no. ##110' -> ['110']
+    out = []
+    for t in s.split():
+        t = t.strip('#.,:-')
+        if t and t not in _HOUSE_NOISE: out.append(t)
+    return out
+
+def _expand(s):                                               # span normalisation: abbreviations, '##110' -> '110'
+    out = []
+    for t in s.split():
+        t = t.lstrip('#') or t; out.append(ABBR.get(t, t))
+    return out
+
+def attrs_of(ix, dk, summ=None):
+    # one record -> [(column, [words])]. plain: name + address as in the other cross-encoders.
+    # dk (domain knowledge): span normalisation (romanisation, learned lexicon, abbreviations, house numbers)
+    #                        + span typing (the parser's HOUSE / STREET / LOCALITY / LANDMARK / CITY / STATE / POSTCODE spans)
+    if not dk:
+        name, addr = REC.name.values[ix], REC.addr.values[ix]
+        n = name if name.isascii() else f'{name} / {norm_rec(name, expand=False)}'
+        a = addr if addr.isascii() else romanise(addr)
+        attrs = [('name', n.split()), ('address', a.split())]
+    else:
+        attrs = [('name', REC.nn.values[ix].split())]
+        for c in DITTO_COLS:
+            v = REC['p_' + c].values[ix]
+            ws = norm_house(v) if c == 'house' else _expand(v)
+            if ws: attrs.append((c, ws))
+        if len(attrs) == 1 and REC.na.values[ix]: attrs.append(('address', REC.na.values[ix].split()))
+    return summ(attrs) if summ is not None else attrs
+
+def serialize(attrs, mark_num=False):
+    # [COL] name [VAL] balaji care private limited [COL] house [VAL] [NUM] 110 ...
+    out = []
+    for c, ws in attrs:
+        out += ['[COL]', c, '[VAL]']
+        for w in ws:
+            if mark_num and any(ch.isdigit() for ch in w): out.append('[NUM]')      # span typing: numbers
+            out.append(w)
+    return ' '.join(out)
+
+class Summarizer:
+    # SU: keep the words with the highest TF-IDF instead of cutting the end. Every attribute keeps its best word.
+    def __init__(self, dk, budget, idf=None, default=None):
+        self.dk, self.budget, self.idf, self.default = dk, budget, idf or {}, default or 1.0
+    def fit(self, ix):
+        df = collections.Counter(); n = 0
+        for i in ix:
+            df.update({w for _, ws in attrs_of(int(i), self.dk) for w in ws}); n += 1
+        self.idf = {w: math.log((n + 1) / (c + 1)) + 1 for w, c in df.items() if c >= 2}
+        self.default = math.log(n + 1) + 1                    # unseen / rare words are the most informative
+        return self
+    def select(self, attrs):                                   # set of kept (attr, word) positions, None = keep all
+        flat = [(ai, wi, w) for ai, (_, ws) in enumerate(attrs) for wi, w in enumerate(ws)]
+        if len(flat) <= self.budget: return None
+        score = lambda w: self.idf.get(w, self.default)
+        keep = set()
+        for ai, (_, ws) in enumerate(attrs):
+            if ws: keep.add((ai, max(range(len(ws)), key=lambda k: score(ws[k]))))
+        rest = sorted((t for t in flat if (t[0], t[1]) not in keep), key=lambda t: (-score(t[2]), t[0], t[1]))
+        keep |= {(t[0], t[1]) for t in rest[:max(0, self.budget - len(keep))]}
+        return keep
+    def __call__(self, attrs):
+        keep = self.select(attrs)
+        if keep is None: return attrs
+        return [(c, [w for wi, w in enumerate(ws) if (ai, wi) in keep]) for ai, (c, ws) in enumerate(attrs)]
+
+def augment(A, B, op, rng):
+    # DA operators of Ditto on a pair of attribute lists
+    if op == 'all': op = AUG_OPS[int(rng.integers(len(AUG_OPS)))]
+    A = [(c, list(w)) for c, w in A]; B = [(c, list(w)) for c, w in B]
+    if op == 'entry_swap': return B, A
+    if op == 'attr_shuffle':
+        return [A[i] for i in rng.permutation(len(A))], [B[i] for i in rng.permutation(len(B))]
+    X = A if rng.random() < 0.5 else B
+    if op == 'attr_del':
+        if len(X) > 1: del X[int(rng.integers(len(X)))]
+        return A, B
+    ok = [k for k, (_, ws) in enumerate(X) if len(ws) >= 2]
+    if not ok: return A, B
+    ws = X[ok[int(rng.integers(len(ok)))]][1]
+    if op == 'span_del':
+        L = int(rng.integers(1, min(3, len(ws) - 1) + 1)); s = int(rng.integers(0, len(ws) - L + 1)); del ws[s:s + L]
+    else:                                                      # span_shuffle
+        L = int(rng.integers(2, min(4, len(ws)) + 1)); s = int(rng.integers(0, len(ws) - L + 1))
+        seg = ws[s:s + L]; rng.shuffle(seg); ws[s:s + L] = seg
+    return A, B
+
+def ditto_tokenizer(name):
+    tok = AutoTokenizer.from_pretrained(name)
+    tok.add_special_tokens({'additional_special_tokens': MARKERS})
+    return tok
+
+class DittoModel(nn.Module):
+    # pre-trained LM + linear layer on the [CLS] vector. MixDA: h = lam * h(x) + (1 - lam) * h(augmented x)
+    def __init__(self, name, tok, pretrained=True):
+        super().__init__()
+        from transformers import AutoConfig
+        self.enc = (AutoModel.from_pretrained(name) if pretrained else AutoModel.from_config(AutoConfig.from_pretrained(name))).float()   # fp32 master weights, AMP runs the forward in fp16
+        ids = tok.convert_tokens_to_ids(MARKERS)
+        if max(ids) >= self.enc.get_input_embeddings().weight.shape[0]: self.enc.resize_token_embeddings(len(tok))
+        if pretrained:                                         # the new markers start at the mean embedding
+            with torch.no_grad():
+                w = self.enc.get_input_embeddings().weight; keep = torch.ones(w.shape[0], dtype=torch.bool); keep[ids] = False
+                w[ids] = w[keep].mean(0)
+        self.drop = nn.Dropout(0.1); self.fc = nn.Linear(self.enc.config.hidden_size, 1)
+    def forward(self, enc, n=None, lam=None):
+        h = self.enc(**enc).last_hidden_state[:, 0]
+        if lam is not None: h = lam[:, None] * h[:n] + (1 - lam[:, None]) * h[n:]     # first n rows = originals, rest = augmented
+        return self.fc(self.drop(h)).squeeze(-1).float()
 
 _ovr = os.environ.get('NLP_ER_MODEL_OVERRIDE')                     # local smoke test only
 DEMO = dict(
@@ -604,6 +746,15 @@ for _p in (find_all('models/*.ce.pt') if DEMO['LOAD_CE'] else []):
     LIVE[_ck['method']] = dict(type='ce', model=_m.to(DEVICE).eval(), kind=_ck['kind'], max_len=_ck['max_len'], amp=_ck['amp'],
                                tok=AutoTokenizer.from_pretrained(_ck['model']))
     del _ck; gc.collect()
+for _p in (find_all('models/*.ditto.pt') if DEMO['LOAD_CE'] else []):          # 06g: the final Ditto model
+    _ck = torch.load(_p, map_location='cpu', weights_only=False)
+    _tk = ditto_tokenizer(_ck['backbone']); _m = DittoModel(_ck['backbone'], _tk, pretrained=False)
+    _own = _m.state_dict(); _bad = [k for k in _ck['state_dict'] if k not in _own]
+    assert not _bad, f"{_ck['method']}: {len(_bad)} saved weights do not fit the model, e.g. {_bad[:3]}"
+    _m.load_state_dict({k: v.to(_own[k].dtype) for k, v in _ck['state_dict'].items()})
+    LIVE[_ck['method']] = dict(type='ditto', model=_m.to(DEVICE).eval(), tok=_tk, cfg=_ck['cfg'], max_len=_ck['max_len'],
+                               summ=Summarizer(_ck['cfg']['dk'], _ck['su_words'], _ck['idf'], _ck['default_idf']))
+    del _ck; gc.collect()
 ZS = 'CE bge-reranker-base zero-shot'
 if DEMO['LOAD_CE'] and DEMO['ZERO_SHOT_CE'] and ZS not in LIVE:
     LIVE[ZS] = dict(type='ce', model=build_ce('seq', DEMO['ZERO_SHOT_CE']).to(DEVICE).eval(), kind='seq', max_len=CFG['MAX_LEN'],
@@ -629,7 +780,7 @@ log('demo ready')
 import html as _html
 SHORT = [('CE IndicBERTv2 full fine-tune', 'IndicBERTv2'), ('CE mDeBERTa-v3 full fine-tune (fp32)', 'mDeBERTa'),
          ('GBM (string + parsed-address features)', 'LightGBM'), ('Siamese char-', ''), (' (vanilla)', ''),
-         ('CE bge-reranker-base ', 'bge '), ('full fine-tune', 'full FT'), ('+ MoE head (top-2 of 4)', 'MoE head'), ('LoRA r=16', 'LoRA')]
+         ('CE bge-reranker-base ', 'bge '), ('Ditto final ', 'Ditto '), ('full fine-tune', 'full FT'), ('+ MoE head (top-2 of 4)', 'MoE head'), ('LoRA r=16', 'LoRA')]
 def short(m):
     for a, b in SHORT: m = m.replace(a, b)
     return m
@@ -693,6 +844,11 @@ def logit_np(p): p = np.clip(p, 1e-6, 1 - 1e-6); return np.log(p / (1 - p))
 @torch.no_grad()
 def live_logits(m, S, Ps):
     L = LIVE[m]
+    if L['type'] == 'ditto':                                  # serialize with the same DK / SU settings as in training
+        dk, su = L['cfg']['dk'], L['cfg']['su']; summ = L['summ'] if su else None
+        with use_rec(S): txt = [serialize(attrs_of(j, dk, summ), dk) for j in range(len(S))]
+        enc = L['tok']([txt[0]] * (len(S) - 1), txt[1:], truncation=True, max_length=L['max_len'], padding=True, return_tensors='pt').to(DEVICE)
+        with autocast(True): return L['model'](enc).float().cpu().numpy(), None
     if L['type'] == 'gbm':
         with use_rec(S): X = pair_features(Ps)
         return logit_np(GBM.predict(X[GBM_META['features']])), None
@@ -799,6 +955,33 @@ def header(R):
     return (f'<div class="banner"><b>{esc(r["name"])}</b><br>{esc(r["addr"]) or "<i>(no address)</i>"}<br>'
             f'<span class="muted">source {esc(r["src"])} · country {esc(r["country"])} · script {esc(r["script"])} · id {esc(r["id"])}</span></div>')
 
+def ditto_html(R):
+    D = [m for m in LIVE if LIVE[m]['type'] == 'ditto']
+    if not D: return ''
+    m = D[0]; L = LIVE[m]; dk, su = L['cfg']['dk'], L['cfg']['su']
+    if 'S' in R:
+        S = R['S']; j = pick_final(R)[0]; j = 0 if j is None else j; rows = [(0, 'this record'), (1 + j, 'chosen candidate')]
+    else:
+        S = R['q'].copy(); F_ = fields_for(S.id.values[0], S.addr.values[0])
+        for k in P_COLS: S[k] = F_[k]
+        rows = [(0, 'this record')]
+    h = (f'<h3>What Ditto reads: {esc(short(m))}</h3><p class="muted">Each record is serialized as <code>[COL] column [VAL] words</code>. '
+         + ('Domain knowledge: normalised words and the parser\'s typed address spans; numbers get a <code>[NUM]</code> marker (yellow). ' if dk else 'Plain name and address. ')
+         + ('Summarisation: grey struck-through words are dropped (lowest TF-IDF) to fit the budget.' if su else 'No summarisation: a long pair is cut at the end.') + '</p>')
+    with use_rec(S):
+        for ix, label in rows:
+            full = attrs_of(ix, dk); keep = L['summ'].select(full) if su else None; lines = []
+            for ai, (c, ws) in enumerate(full):
+                chips = ''
+                for wi, w in enumerate(ws):
+                    off = keep is not None and (ai, wi) not in keep
+                    if dk and not off and any(ch.isdigit() for ch in w): chips += chip('[NUM]', 'chg')
+                    chips += chip(w, 'oov' if off else ('chg' if (dk and any(ch.isdigit() for ch in w)) else ''))
+                lines.append(f'<div><b>[COL] {esc(c)} [VAL]</b> {chips}</div>')
+            n_tok = len(L['tok'](serialize(attrs_of(ix, dk, L['summ'] if su else None), dk))['input_ids'])
+            h += f'<h4>{label}: {esc(S.name.values[ix])} <span class="muted">({n_tok} tokens)</span></h4>' + ''.join(lines)
+    return h
+
 def panel_tokens(R):
     q = R['q'].iloc[0]; h = header(R)
     for field, s in (('Name', q['name']), ('Address', q['addr'])):
@@ -818,6 +1001,7 @@ def panel_tokens(R):
     h += '<h3>What the models read</h3>' + tbl(['model', 'input text'], [
         ['TF-IDF', esc(q['bl_text'])], ['e5 bi-encoder', esc('query: ' + q['ce_text'])],
         ['cross-encoders', esc(q['ce_text']) + ' <span class="muted">[SEP] candidate S1</span>'], ['Siamese RNNs (characters)', esc(q['ltext'])]])
+    h += ditto_html(R)
     return box(h)
 
 def tag_chips(toks, tags):
