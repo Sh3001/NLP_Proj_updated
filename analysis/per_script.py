@@ -164,7 +164,8 @@ def main():
             e['linked'], e['unlinked'] = int(linked), int(unl)
             err_rows.append(e)
         rows.append(row)
-        Q[f'ok::{m}'] = ok.values; Q[f'pred::{m}'] = Q._p.values
+        # record-level correctness: right S1 picked, or correctly left unmatched (unlinked record, no prediction)
+        Q[f'ok::{m}'] = ok.values | (~has.values & Q.owner.isna().values); Q[f'pred::{m}'] = Q._p.values
 
     bad = [(short(m), x, y) for m, x, y in check if abs(x - y) > 2e-5]
     print('\nconsistency check (recomputed overall test F0.5 vs results/*.json):', 'OK' if not bad else f'MISMATCH {bad}')

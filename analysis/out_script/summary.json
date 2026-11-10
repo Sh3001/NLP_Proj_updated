@@ -1,11 +1,21 @@
 {
  "models": [
+  "GBM (string + parsed-address features)",
   "Siamese char-BiLSTM",
   "Siamese char-BiGRU",
   "Siamese char-BiRNN (vanilla)",
-  "CE IndicBERTv2 full fine-tune"
+  "CE mDeBERTa-v3 full fine-tune (fp32)",
+  "CE bge-reranker-base full fine-tune",
+  "CE bge-reranker-base LoRA r=16",
+  "CE IndicBERTv2 full fine-tune",
+  "CE bge-reranker-base zero-shot"
  ],
  "check": [
+  [
+   "GBM (string + parsed-address features)",
+   0.9908064692010939,
+   0.99081
+  ],
   [
    "Siamese char-BiLSTM",
    0.9833493170673319,
@@ -22,10 +32,84 @@
    0.97475
   ],
   [
+   "CE mDeBERTa-v3 full fine-tune (fp32)",
+   0.9940190496517084,
+   0.99402
+  ],
+  [
+   "CE bge-reranker-base full fine-tune",
+   0.9912396455225265,
+   0.99124
+  ],
+  [
+   "CE bge-reranker-base LoRA r=16",
+   0.9870797932044001,
+   0.98708
+  ],
+  [
    "CE IndicBERTv2 full fine-tune",
    0.9761145143414616,
    0.97611
+  ],
+  [
+   "CE bge-reranker-base zero-shot",
+   0.9167439237674752,
+   0.91674
   ]
  ],
- "errors_model": "Siamese char-BiLSTM"
+ "indic_vs_bge": [
+  {
+   "script": "latin",
+   "records": 34342,
+   "F0.5 Indic": 0.96839,
+   "F0.5 bge": 0.98775,
+   "both right": 33181,
+   "only Indic right": 173,
+   "only bge right": 775,
+   "both wrong": 213,
+   "AUC Indic": 0.99897,
+   "AUC bge": 0.99983,
+   "McNemar p": 1.52e-91
+  },
+  {
+   "script": "devanagari",
+   "records": 7868,
+   "F0.5 Indic": 0.9728,
+   "F0.5 bge": 0.99352,
+   "both right": 7689,
+   "only Indic right": 27,
+   "only bge right": 139,
+   "both wrong": 13,
+   "AUC Indic": 0.99937,
+   "AUC bge": 0.99996,
+   "McNemar p": 2.27e-19
+  },
+  {
+   "script": "malayalam",
+   "records": 10371,
+   "F0.5 Indic": 0.97782,
+   "F0.5 bge": 0.99146,
+   "both right": 10168,
+   "only Indic right": 35,
+   "only bge right": 149,
+   "both wrong": 19,
+   "AUC Indic": 0.99963,
+   "AUC bge": 0.99996,
+   "McNemar p": 6e-18
+  },
+  {
+   "script": "other_indic",
+   "records": 283,
+   "F0.5 Indic": 0.97153,
+   "F0.5 bge": 0.94412,
+   "both right": 264,
+   "only Indic right": 7,
+   "only bge right": 6,
+   "both wrong": 6,
+   "AUC Indic": 0.99878,
+   "AUC bge": 0.99607,
+   "McNemar p": 1.0
+  }
+ ],
+ "errors_model": "CE mDeBERTa-v3 full fine-tune (fp32)"
 }
