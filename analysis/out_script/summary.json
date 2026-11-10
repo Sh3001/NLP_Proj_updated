@@ -8,7 +8,13 @@
   "CE bge-reranker-base full fine-tune",
   "CE bge-reranker-base LoRA r=16",
   "CE IndicBERTv2 full fine-tune",
-  "CE bge-reranker-base zero-shot"
+  "CE bge-reranker-base zero-shot",
+  "Ditto bge DK+SU+DA-all 40k",
+  "Ditto xlmr DA-all 40k",
+  "Ditto xlmr DK 40k",
+  "Ditto xlmr plain 40k",
+  "Ditto xlmr DK+SU+DA-all 40k",
+  "Ditto xlmr SU 40k"
  ],
  "check": [
   [
@@ -55,6 +61,36 @@
    "CE bge-reranker-base zero-shot",
    0.9167439237674752,
    0.91674
+  ],
+  [
+   "Ditto bge DK+SU+DA-all 40k",
+   0.9821395264071915,
+   0.98214
+  ],
+  [
+   "Ditto xlmr DA-all 40k",
+   0.9817180011290133,
+   0.98172
+  ],
+  [
+   "Ditto xlmr DK 40k",
+   0.9802840063812209,
+   0.98028
+  ],
+  [
+   "Ditto xlmr plain 40k",
+   0.9788015110463171,
+   0.9788
+  ],
+  [
+   "Ditto xlmr DK+SU+DA-all 40k",
+   0.9779241219682026,
+   0.97792
+  ],
+  [
+   "Ditto xlmr SU 40k",
+   0.9754075982434073,
+   0.97541
   ]
  ],
  "indic_vs_bge": [

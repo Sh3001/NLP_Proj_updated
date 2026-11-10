@@ -45,3 +45,33 @@
 | bge zero-shot | India Devanagari | 7868 | 77 | 738 | 59 | 2 | 11.11 | 5703 | 2165 |
 | bge zero-shot | India Malayalam | 10371 | 63 | 904 | 107 | 2 | 10.36 | 7374 | 2997 |
 | bge zero-shot | India Other indic | 283 | 0 | 0 | 16 | 0 | 5.65 | 266 | 17 |
+| Ditto bge DK+SU+DA-all 40k | US Latin | 48710 | 111 | 375 | 541 | 35 | 2.11 | 35788 | 12922 |
+| Ditto bge DK+SU+DA-all 40k | India Latin | 34342 | 127 | 200 | 472 | 57 | 2.33 | 25488 | 8854 |
+| Ditto bge DK+SU+DA-all 40k | India Devanagari | 7868 | 4 | 61 | 50 | 2 | 1.46 | 5703 | 2165 |
+| Ditto bge DK+SU+DA-all 40k | India Malayalam | 10371 | 7 | 87 | 74 | 2 | 1.62 | 7374 | 2997 |
+| Ditto bge DK+SU+DA-all 40k | India Other indic | 283 | 0 | 0 | 21 | 0 | 7.42 | 266 | 17 |
+| Ditto xlmr DA-all 40k | US Latin | 48710 | 102 | 328 | 744 | 35 | 2.41 | 35788 | 12922 |
+| Ditto xlmr DA-all 40k | India Latin | 34342 | 108 | 224 | 348 | 57 | 1.98 | 25488 | 8854 |
+| Ditto xlmr DA-all 40k | India Devanagari | 7868 | 2 | 83 | 28 | 2 | 1.44 | 5703 | 2165 |
+| Ditto xlmr DA-all 40k | India Malayalam | 10371 | 5 | 139 | 73 | 2 | 2.09 | 7374 | 2997 |
+| Ditto xlmr DA-all 40k | India Other indic | 283 | 0 | 0 | 13 | 0 | 4.59 | 266 | 17 |
+| Ditto xlmr DK 40k | US Latin | 48710 | 101 | 231 | 1203 | 35 | 3.15 | 35788 | 12922 |
+| Ditto xlmr DK 40k | India Latin | 34342 | 111 | 155 | 743 | 57 | 2.94 | 25488 | 8854 |
+| Ditto xlmr DK 40k | India Devanagari | 7868 | 6 | 52 | 93 | 2 | 1.92 | 5703 | 2165 |
+| Ditto xlmr DK 40k | India Malayalam | 10371 | 5 | 79 | 115 | 2 | 1.92 | 7374 | 2997 |
+| Ditto xlmr DK 40k | India Other indic | 283 | 0 | 0 | 27 | 0 | 9.54 | 266 | 17 |
+| Ditto xlmr plain 40k | US Latin | 48710 | 101 | 541 | 743 | 35 | 2.84 | 35788 | 12922 |
+| Ditto xlmr plain 40k | India Latin | 34342 | 99 | 239 | 417 | 57 | 2.2 | 25488 | 8854 |
+| Ditto xlmr plain 40k | India Devanagari | 7868 | 4 | 70 | 65 | 2 | 1.77 | 5703 | 2165 |
+| Ditto xlmr plain 40k | India Malayalam | 10371 | 3 | 113 | 135 | 2 | 2.42 | 7374 | 2997 |
+| Ditto xlmr plain 40k | India Other indic | 283 | 0 | 0 | 19 | 0 | 6.71 | 266 | 17 |
+| Ditto xlmr DK+SU+DA-all 40k | US Latin | 48710 | 118 | 244 | 1140 | 35 | 3.08 | 35788 | 12922 |
+| Ditto xlmr DK+SU+DA-all 40k | India Latin | 34342 | 151 | 147 | 1020 | 57 | 3.84 | 25488 | 8854 |
+| Ditto xlmr DK+SU+DA-all 40k | India Devanagari | 7868 | 2 | 45 | 181 | 2 | 2.9 | 5703 | 2165 |
+| Ditto xlmr DK+SU+DA-all 40k | India Malayalam | 10371 | 4 | 70 | 202 | 2 | 2.66 | 7374 | 2997 |
+| Ditto xlmr DK+SU+DA-all 40k | India Other indic | 283 | 0 | 0 | 33 | 0 | 11.66 | 266 | 17 |
+| Ditto xlmr SU 40k | US Latin | 48710 | 82 | 376 | 1349 | 35 | 3.71 | 35788 | 12922 |
+| Ditto xlmr SU 40k | India Latin | 34342 | 115 | 255 | 784 | 57 | 3.36 | 25488 | 8854 |
+| Ditto xlmr SU 40k | India Devanagari | 7868 | 1 | 93 | 111 | 2 | 2.61 | 5703 | 2165 |
+| Ditto xlmr SU 40k | India Malayalam | 10371 | 5 | 131 | 154 | 2 | 2.8 | 7374 | 2997 |
+| Ditto xlmr SU 40k | India Other indic | 283 | 0 | 0 | 24 | 0 | 8.48 | 266 | 17 |

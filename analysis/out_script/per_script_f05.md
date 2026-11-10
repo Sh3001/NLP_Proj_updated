@@ -9,5 +9,11 @@
 | bge LoRA r=16 | 7 Transformers | 0.98708 | 0.98485 | 0.9824 | 0.98886 | 0.98618 | 0.95782 |
 | IndicBERTv2 full FT | 7 Transformers | 0.97611 | 0.97118 | 0.96839 | 0.9728 | 0.97782 | 0.97153 |
 | bge zero-shot | 7 Transformers | 0.91674 | 0.92417 | 0.8944 | 0.8826 | 0.88574 | 0.96146 |
+| Ditto bge DK+SU+DA-all 40k | 7b Ditto ablation | 0.98214 | 0.98057 | 0.97441 | 0.98108 | 0.97867 | 0.93049 |
+| Ditto xlmr DA-all 40k | 7b Ditto ablation | 0.98172 | 0.98039 | 0.97716 | 0.98141 | 0.97436 | 0.95673 |
+| Ditto xlmr DK 40k | 7b Ditto ablation | 0.98028 | 0.97789 | 0.97032 | 0.97705 | 0.97643 | 0.93097 |
+| Ditto xlmr plain 40k | 7b Ditto ablation | 0.9788 | 0.97431 | 0.97696 | 0.97714 | 0.97321 | 0.94077 |
+| Ditto xlmr DK+SU+DA-all 40k | 7b Ditto ablation | 0.97792 | 0.97822 | 0.96357 | 0.96734 | 0.96903 | 0.93182 |
+| Ditto xlmr SU 40k | 7b Ditto ablation | 0.97541 | 0.97342 | 0.9677 | 0.96906 | 0.96769 | 0.94172 |
 
 Records per group (test S2/S3): US Latin 48,710, India Latin 34,342, India Devanagari 7,868, India Malayalam 10,371, India Other indic 283

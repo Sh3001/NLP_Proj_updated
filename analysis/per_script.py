@@ -264,10 +264,10 @@ def main():
             if not np.isnan(M[i, j]):
                 ax.text(j, i, f'{M[i, j]:.4f}', ha='center', va='center', fontsize=8,
                         color='#ffffff' if (M[i, j] - lo) / max(hi - lo, 1e-9) > 0.6 else '#0b0b0b')
-    ax.set_xticks(range(len(cols))); ax.set_xticklabels(cols, fontsize=9)
+    ax.set_xticks(range(len(cols))); ax.set_xticklabels([c.replace(' ', '\n', 1) for c in cols], fontsize=9)
     ax.set_yticks(range(len(T))); ax.set_yticklabels(T.model, fontsize=9)
     ax.tick_params(length=0); [s.set_visible(False) for s in ax.spines.values()]
-    ax.set_title('Test F0.5 per script of the S2/S3 record (colour scale clipped; Other Indic = 283 records)', loc='left', fontsize=10)
+    ax.set_title('Test F0.5 per script of the S2/S3 record\n(colour scale clipped; Other Indic = 283 records)', loc='left', fontsize=10)
     plt.colorbar(im, ax=ax, fraction=0.03, pad=0.02).outline.set_visible(False)
     plt.tight_layout(); plt.savefig(out / 'per_script_f05.png', dpi=160); plt.close()
     print('wrote', ', '.join(sorted(p.name for p in out.iterdir())))
