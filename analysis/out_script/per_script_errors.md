@@ -30,6 +30,11 @@
 | bge full FT | India Devanagari | 7868 | 1 | 15 | 24 | 2 | 0.51 | 5703 | 2165 |
 | bge full FT | India Malayalam | 10371 | 5 | 21 | 28 | 2 | 0.52 | 7374 | 2997 |
 | bge full FT | India Other indic | 283 | 0 | 0 | 13 | 0 | 4.59 | 266 | 17 |
+| bge + MoE head (top-2 of 4) | US Latin | 48710 | 92 | 197 | 472 | 35 | 1.56 | 35788 | 12922 |
+| bge + MoE head (top-2 of 4) | India Latin | 34342 | 80 | 136 | 257 | 57 | 1.38 | 25488 | 8854 |
+| bge + MoE head (top-2 of 4) | India Devanagari | 7868 | 2 | 38 | 18 | 2 | 0.74 | 5703 | 2165 |
+| bge + MoE head (top-2 of 4) | India Malayalam | 10371 | 3 | 41 | 38 | 2 | 0.79 | 7374 | 2997 |
+| bge + MoE head (top-2 of 4) | India Other indic | 283 | 0 | 0 | 22 | 0 | 7.77 | 266 | 17 |
 | bge LoRA r=16 | US Latin | 48710 | 95 | 240 | 565 | 35 | 1.85 | 35788 | 12922 |
 | bge LoRA r=16 | India Latin | 34342 | 96 | 164 | 265 | 57 | 1.53 | 25488 | 8854 |
 | bge LoRA r=16 | India Devanagari | 7868 | 1 | 46 | 23 | 2 | 0.89 | 5703 | 2165 |
@@ -75,3 +80,28 @@
 | Ditto xlmr SU 40k | India Devanagari | 7868 | 1 | 93 | 111 | 2 | 2.61 | 5703 | 2165 |
 | Ditto xlmr SU 40k | India Malayalam | 10371 | 5 | 131 | 154 | 2 | 2.8 | 7374 | 2997 |
 | Ditto xlmr SU 40k | India Other indic | 283 | 0 | 0 | 24 | 0 | 8.48 | 266 | 17 |
+| Gated Mixture of Experts | US Latin | 48710 | 87 | 89 | 199 | 35 | 0.77 | 35788 | 12922 |
+| Gated Mixture of Experts | India Latin | 34342 | 63 | 35 | 117 | 57 | 0.63 | 25488 | 8854 |
+| Gated Mixture of Experts | India Devanagari | 7868 | 3 | 10 | 7 | 2 | 0.25 | 5703 | 2165 |
+| Gated Mixture of Experts | India Malayalam | 10371 | 2 | 9 | 6 | 2 | 0.16 | 7374 | 2997 |
+| Gated Mixture of Experts | India Other indic | 283 | 0 | 0 | 2 | 0 | 0.71 | 266 | 17 |
+| Logistic-regression stacking | US Latin | 48710 | 74 | 68 | 267 | 35 | 0.84 | 35788 | 12922 |
+| Logistic-regression stacking | India Latin | 34342 | 56 | 28 | 165 | 57 | 0.73 | 25488 | 8854 |
+| Logistic-regression stacking | India Devanagari | 7868 | 2 | 8 | 10 | 2 | 0.25 | 5703 | 2165 |
+| Logistic-regression stacking | India Malayalam | 10371 | 2 | 8 | 6 | 2 | 0.15 | 7374 | 2997 |
+| Logistic-regression stacking | India Other indic | 283 | 0 | 0 | 3 | 0 | 1.06 | 266 | 17 |
+| MoE, constant gate (ablation) | US Latin | 48710 | 84 | 80 | 230 | 35 | 0.81 | 35788 | 12922 |
+| MoE, constant gate (ablation) | India Latin | 34342 | 59 | 32 | 131 | 57 | 0.65 | 25488 | 8854 |
+| MoE, constant gate (ablation) | India Devanagari | 7868 | 3 | 9 | 7 | 2 | 0.24 | 5703 | 2165 |
+| MoE, constant gate (ablation) | India Malayalam | 10371 | 2 | 10 | 6 | 2 | 0.17 | 7374 | 2997 |
+| MoE, constant gate (ablation) | India Other indic | 283 | 0 | 0 | 3 | 0 | 1.06 | 266 | 17 |
+| LightGBM stacking (same inputs) | US Latin | 48710 | 78 | 55 | 274 | 35 | 0.84 | 35788 | 12922 |
+| LightGBM stacking (same inputs) | India Latin | 34342 | 60 | 16 | 164 | 57 | 0.7 | 25488 | 8854 |
+| LightGBM stacking (same inputs) | India Devanagari | 7868 | 2 | 7 | 7 | 2 | 0.2 | 5703 | 2165 |
+| LightGBM stacking (same inputs) | India Malayalam | 10371 | 1 | 9 | 9 | 2 | 0.18 | 7374 | 2997 |
+| LightGBM stacking (same inputs) | India Other indic | 283 | 0 | 0 | 4 | 0 | 1.41 | 266 | 17 |
+| Mean of 9 calibrated experts | US Latin | 48710 | 71 | 146 | 240 | 35 | 0.94 | 35788 | 12922 |
+| Mean of 9 calibrated experts | India Latin | 34342 | 70 | 95 | 131 | 57 | 0.86 | 25488 | 8854 |
+| Mean of 9 calibrated experts | India Devanagari | 7868 | 2 | 26 | 7 | 2 | 0.44 | 5703 | 2165 |
+| Mean of 9 calibrated experts | India Malayalam | 10371 | 1 | 26 | 11 | 2 | 0.37 | 7374 | 2997 |
+| Mean of 9 calibrated experts | India Other indic | 283 | 0 | 0 | 8 | 0 | 2.83 | 266 | 17 |
