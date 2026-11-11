@@ -14,7 +14,12 @@
   "Ditto xlmr DK 40k",
   "Ditto xlmr plain 40k",
   "Ditto xlmr DK+SU+DA-all 40k",
-  "Ditto xlmr SU 40k"
+  "Ditto xlmr SU 40k",
+  "Gated Mixture of Experts",
+  "Logistic-regression stacking",
+  "MoE, constant gate (ablation)",
+  "LightGBM stacking (same inputs)",
+  "Mean of 9 calibrated experts"
  ],
  "check": [
   [
@@ -91,6 +96,31 @@
    "Ditto xlmr SU 40k",
    0.9754075982434073,
    0.97541
+  ],
+  [
+   "Gated Mixture of Experts",
+   0.9948091914309667,
+   0.99481
+  ],
+  [
+   "Logistic-regression stacking",
+   0.9947674654849146,
+   0.99477
+  ],
+  [
+   "MoE, constant gate (ablation)",
+   0.994740506552135,
+   0.99474
+  ],
+  [
+   "LightGBM stacking (same inputs)",
+   0.9946974919396181,
+   0.9947
+  ],
+  [
+   "Mean of 9 calibrated experts",
+   0.9928634404860798,
+   0.99286
   ]
  ],
  "indic_vs_bge": [
@@ -147,5 +177,5 @@
    "McNemar p": 1.0
   }
  ],
- "errors_model": "CE mDeBERTa-v3 full fine-tune (fp32)"
+ "errors_model": "Gated Mixture of Experts"
 }
