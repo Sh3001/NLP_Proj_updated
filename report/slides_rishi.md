@@ -80,7 +80,7 @@ on 100-character records.
 
 **Title:** Script is not what makes a record hard
 
-Figure: `analysis/out_script/per_script_f05.png` (heatmap, 9 models × 5 groups).
+Figure: `analysis/out_script/per_script_f05.png` (heatmap, 21 matchers × 5 groups).
 
 | | US Latin | India Latin | Devanagari | Malayalam | other Indic (283) |
 |---|---|---|---|---|---|
@@ -88,9 +88,11 @@ Figure: `analysis/out_script/per_script_f05.png` (heatmap, 9 models × 5 groups)
 | bge full FT | .989 | **.988** | .994 | .992 | .944 |
 | BiLSTM | .983 | **.975** | .983 | .978 | .905 |
 | bge zero-shot | .924 | .894 | **.883** | **.886** | .962 |
+| **Gated MoE fusion (07)** | .993 | **.992** | .996 | .997 | .997 |
 
-- **India Latin is the hardest group for every trained model.** Native-script records are linked
-  *better* than Latin ones after fine-tuning.
+- **India Latin is the hardest group for almost every trained model, fusion included.** Native-script
+  records are linked *better* than Latin ones after full fine-tuning.
+- Fusion gains most where single models are weakest: India Latin (+0.002) and rare scripts (+0.016).
 - Zero-shot bge is the only model weak on native scripts. Fine-tuning adds **+0.11** on Devanagari.
 - Char-RNNs drop to ≈0.90 on rare scripts (Telugu, Gujarati, …): they see only the romanised text,
   and romanisation fails there.
@@ -125,12 +127,13 @@ Same recipe (full fine-tune, 160k pairs, 1 epoch); only the backbone differs.
 
 | | record | what happened | models wrong |
 |---|---|---|---|
-| 1 | *Eye Care Associates of Hermiston*, **1139** Hartley Ave | linked to S1 at **1135**, but truth is *no match* | 9 / 9 |
-| 2 | *The Dent Seafood Corporation*, no address | two S1 branches share the name | 9 / 9 |
-| 3 | *Tech അഗ്രോ പ്രൈവറ്റ് ലിമിറ്റഡ്*, no address | true S1 never retrieved (blocking miss) | 9 / 9 |
-| 4 | *SREE SYSTEMS PRIVATE LIMITED*, 436/A Machamthode | IndicBERTv2 picks another company at the same address | 1 / 9 |
-| 5 | *ಸೂರ್ಯ ಇನ್‌ಫ್ರಾಸ್ಟ್ರಕ್ಚರ್ …* (Kannada) | IndicBERTv2 misses *Surya Infrastructure* | 1 / 9 |
+| 1 | *Eye Care Associates of Hermiston*, **1139** Hartley Ave | linked to S1 at **1135**, but truth is *no match* | 20 / 21 |
+| 2 | *The Dent Seafood Corporation*, no address | two S1 branches share the name | 21 / 21 |
+| 3 | *Tech അഗ്രോ പ്രൈവറ്റ് ലിമിറ്റഡ്*, no address | true S1 never retrieved (blocking miss) | 21 / 21 |
+| 4 | *SREE SYSTEMS PRIVATE LIMITED*, 436/A Machamthode | IndicBERTv2 picks another company at the same address | 1 / 21 |
+| 5 | *ಸೂರ್ಯ ಇನ್‌ಫ್ರಾಸ್ಟ್ರಕ್ಚರ್ …* (Kannada) | IndicBERTv2 (+ MoE head, 3 Ditto runs) miss *Surya Infrastructure* | 5 / 21 |
 
 - Shared errors come from the **data**: hard negatives, address-less siblings, blocking misses.
   None is script-specific.
-- Script-specific errors belong to single models. That is why fusing the matchers helps (next section: MoE).
+- Script-specific errors belong to a few single models, and **fusion fixes them**. The shared ones
+  survive fusion too (counts over 21 matchers: 10 single models, 6 Ditto runs, 5 fusion models).
