@@ -195,15 +195,17 @@ not yet been run, its row is absent from the table.
 | 6 RNN / LSTM | Siamese char-BiLSTM | 0.98920 | 0.98335 | 0.9863 | 0.9846 | 0.98390 | 0.98284 |
 | 6 RNN / LSTM | Siamese char-BiGRU | 0.98814 | 0.98197 | 0.9850 | 0.9835 | 0.98142 | 0.98247 |
 | 6 RNN / LSTM | Siamese char-BiRNN (vanilla) | 0.98374 | 0.97475 | 0.9782 | 0.9789 | 0.97646 | 0.97316 |
-| 7 Transformers | CE bge-reranker-base LoRA r=16 | 0.99142 | 0.98708 | 0.9900 | 0.9854 | 0.98566 | 0.98839 |
-| 7 Transformers | CE bge-reranker-base + MoE head (top-2 of 4) | 0.99226 | **0.98888** | 0.9914 | 0.9871 | 0.98719 | 0.99044 |
-| 7 Transformers | CE IndicBERTv2 full fine-tune | 0.98249 | 0.97611 | 0.9841 | 0.9666 | 0.97268 | 0.97929 |
 | 7 Transformers | CE mDeBERTa-v3 full fine-tune (fp32) | 0.99561 | 0.99402 | 0.9953 | 0.9931 | 0.99261 | 0.99533 |
-| 8 Fusion | Mean of 7 calibrated experts | 0.99566 | 0.99339 | 0.9955 | 0.9908 | 0.99216 | 0.99453 |
-| 8 Fusion | Logistic-regression stacking | 0.99632 | 0.99476 | 0.9963 | 0.9927 | 0.99288 | 0.99650 |
+| 7 Transformers | CE bge-reranker-base full fine-tune | 0.99338 | 0.99124 | 0.9941 | 0.9878 | 0.98935 | 0.99299 |
+| 7 Transformers | CE bge-reranker-base + MoE head (top-2 of 4) | 0.99226 | **0.98888** | 0.9914 | 0.9871 | 0.98719 | 0.99044 |
+| 7 Transformers | CE bge-reranker-base LoRA r=16 | 0.99142 | 0.98708 | 0.9900 | 0.9854 | 0.98566 | 0.98839 |
+| 7 Transformers | CE IndicBERTv2 full fine-tune | 0.98249 | 0.97611 | 0.9841 | 0.9666 | 0.97268 | 0.97929 |
+| 7 Transformers | CE bge-reranker-base zero-shot | 0.94192 | 0.91674 | 0.9161 | 0.9595 | 0.92713 | 0.90712 |
+| **8 Fusion** | **Gated Mixture of Experts** | **0.99648** | **0.99481** | **0.9961** | **0.9935** | **0.99304** | **0.99645** |
+| 8 Fusion | Logistic-regression stacking | 0.99648 | 0.99477 | 0.9967 | 0.9920 | 0.99322 | 0.99620 |
 | 8 Fusion | MoE, constant gate (ablation) | 0.99642 | 0.99474 | 0.9963 | 0.9928 | 0.99299 | 0.99636 |
-| 8 Fusion | LightGBM stacking (same inputs) | 0.99608 | 0.99478 | 0.9968 | 0.9919 | 0.99346 | 0.99602 |
-| **8 Fusion** | **Gated Mixture of Experts** | **0.99638** | **0.99480** | **0.9963** | **0.9930** | **0.99307** | **0.99641** |
+| 8 Fusion | LightGBM stacking (same inputs) | 0.99632 | 0.99470 | 0.9968 | 0.9918 | 0.99305 | 0.99622 |
+| 8 Fusion | Mean of 9 calibrated experts | 0.99525 | 0.99286 | 0.9941 | 0.9927 | 0.99204 | 0.99363 |
 
 *Fill from `final_results.csv` after the Kaggle run.*
 

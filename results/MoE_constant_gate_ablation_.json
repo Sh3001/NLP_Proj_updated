@@ -9,6 +9,5 @@
  "test_singleton_acc": 0.9933,
  "quick": false,
  "test_f05_India": 0.99636,
- "test_f05_US": 0.99299,
- "train_min": 0.5
+ "test_f05_US": 0.99299
 }

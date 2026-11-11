@@ -310,16 +310,18 @@ On November 10, 2026, Ayush successfully executed both `06d_ce_bge_moe_head.ipyn
    - **Singleton Accuracy:** 0.9706 | **Optimal Threshold:** 0.08
    - **Result:** Successfully beats BGE LoRA (0.98708) by **+0.0018 $F_{0.5}$ points**!
 
-2. **`07` Gated MoE Fusion Execution (CPU, 3,930 steps, 0.16 min training):**
-   - **Gated MoE Test $F_{0.5}$:** **0.99480** (Val $F_{0.5}$: 0.99638)
-   - **Test Precision ($P$):** 0.9963 | **Test Recall ($R$):** 0.9930
-   - **India $F_{0.5}$:** 0.99641 | **US $F_{0.5}$:** 0.99307
-   - **Singleton Accuracy:** 0.9933 | **Optimal Threshold:** 0.35
+2. **`07` Gated MoE Fusion Execution (CPU, 9 calibrated experts attached including 06a & 06b):**
+   - **Gated MoE Test $F_{0.5}$:** **0.99481** (Val $F_{0.5}$: 0.99648)
+   - **Test Precision ($P$):** 0.9961 | **Test Recall ($R$):** 0.9935
+   - **India $F_{0.5}$:** 0.99645 | **US $F_{0.5}$:** 0.99304
+   - **Singleton Accuracy:** 0.9933 | **Optimal Threshold:** 0.30
+   - **Kaggle Run URL:** [`notebook2a4366b080`](https://www.kaggle.com/code/ayush122222/notebook2a4366b080)
    - **Global Ranking:** **#1 BEST MODEL IN THE ENTIRE PROJECT**
      - Outperforms `mDeBERTa-v3` (0.99402)
-     - Outperforms `LightGBM stacking` (0.99478)
-     - Outperforms `Logistic Regression stacking` (0.99476)
+     - Outperforms `BGE full fine-tune` (0.99124)
+     - Outperforms `LightGBM stacking` (0.99470)
+     - Outperforms `Logistic Regression stacking` (0.99477)
      - Outperforms `Constant-gate MoE ablation` (0.99474)
-     - Outperforms `Mean of calibrated experts` (0.99339)
+     - Outperforms `Mean of 9 calibrated experts` (0.99286)
 
 All figures, plots (`results_test_f05.png`, `moe_gates.png`), and CSVs (`final_results.csv`, `moe_gate_by_*.csv`) are now synchronized with 100% genuine Kaggle experimental outputs.

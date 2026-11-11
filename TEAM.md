@@ -50,7 +50,7 @@ GPU time is limited, so run the notebooks in this order. The first tier alone gi
 | [`xenoncipher/er-06c-output`](https://www.kaggle.com/datasets/xenoncipher/er-06c-output) | output of `06c_ce_bge_lora`: scores, results, LoRA adapters | 07, 08 |
 | [`xenoncipher/er-06f-output`](https://www.kaggle.com/datasets/xenoncipher/er-06f-output) | output of `06f_ce_mdeberta`: scores, results, fine-tuned weights | 07, 08 |
 | [`ayush122222/notebook7ebbf31256`](https://www.kaggle.com/code/ayush122222/notebook7ebbf31256) (`er-06d-output`) | output of `06d_ce_bge_moe_head`: BGE + MoE head weights & gate statistics | 07, 08 |
-| [`ayush122222/notebook943a8e720d`](https://www.kaggle.com/code/ayush122222/notebook943a8e720d) (`er-07-output`) | output of `07_moe_fusion_and_results`: gated MoE fusion model, master results & plots | 08 |
+| [`ayush122222/notebook2a4366b080`](https://www.kaggle.com/code/ayush122222/notebook2a4366b080) (`er-07-output`) | output of `07_moe_fusion_and_results`: gated MoE fusion model, master results & plots | 08 |
 
 Both are public. In your notebook: **Add Input → Datasets**, search for `er-small` / `er-03-output` (or
 paste the link). No upload and no permission needed. Your Kaggle account must be phone-verified, or

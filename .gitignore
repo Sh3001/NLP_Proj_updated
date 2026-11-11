@@ -4,5 +4,6 @@ __pycache__/
 .DS_Store
 *.zip
 models/
+preds/
 .ipynb_checkpoints/
 extra/
