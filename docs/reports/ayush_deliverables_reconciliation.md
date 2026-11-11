@@ -315,7 +315,7 @@ On November 10, 2026, Ayush successfully executed both `06d_ce_bge_moe_head.ipyn
    - **Test Precision ($P$):** 0.9961 | **Test Recall ($R$):** 0.9935
    - **India $F_{0.5}$:** 0.99645 | **US $F_{0.5}$:** 0.99304
    - **Singleton Accuracy:** 0.9933 | **Optimal Threshold:** 0.30
-   - **Kaggle Run URL:** [`notebook943a8e720d`](https://www.kaggle.com/code/ayush122222/notebook943a8e720d)
+   - **Kaggle Run URL:** [`notebook2a4366b080`](https://www.kaggle.com/code/ayush122222/notebook2a4366b080)
    - **Global Ranking:** **#1 BEST MODEL IN THE ENTIRE PROJECT**
      - Outperforms `mDeBERTa-v3` (0.99402)
      - Outperforms `BGE full fine-tune` (0.99124)
