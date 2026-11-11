@@ -6,6 +6,7 @@
   "Siamese char-BiRNN (vanilla)",
   "CE mDeBERTa-v3 full fine-tune (fp32)",
   "CE bge-reranker-base full fine-tune",
+  "CE bge-reranker-base + MoE head (top-2 of 4)",
   "CE bge-reranker-base LoRA r=16",
   "CE IndicBERTv2 full fine-tune",
   "CE bge-reranker-base zero-shot",
@@ -51,6 +52,11 @@
    "CE bge-reranker-base full fine-tune",
    0.9912396455225265,
    0.99124
+  ],
+  [
+   "CE bge-reranker-base + MoE head (top-2 of 4)",
+   0.9888778793016877,
+   0.98888
   ],
   [
    "CE bge-reranker-base LoRA r=16",

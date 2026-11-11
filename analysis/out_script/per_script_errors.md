@@ -30,6 +30,11 @@
 | bge full FT | India Devanagari | 7868 | 1 | 15 | 24 | 2 | 0.51 | 5703 | 2165 |
 | bge full FT | India Malayalam | 10371 | 5 | 21 | 28 | 2 | 0.52 | 7374 | 2997 |
 | bge full FT | India Other indic | 283 | 0 | 0 | 13 | 0 | 4.59 | 266 | 17 |
+| bge + MoE head (top-2 of 4) | US Latin | 48710 | 92 | 197 | 472 | 35 | 1.56 | 35788 | 12922 |
+| bge + MoE head (top-2 of 4) | India Latin | 34342 | 80 | 136 | 257 | 57 | 1.38 | 25488 | 8854 |
+| bge + MoE head (top-2 of 4) | India Devanagari | 7868 | 2 | 38 | 18 | 2 | 0.74 | 5703 | 2165 |
+| bge + MoE head (top-2 of 4) | India Malayalam | 10371 | 3 | 41 | 38 | 2 | 0.79 | 7374 | 2997 |
+| bge + MoE head (top-2 of 4) | India Other indic | 283 | 0 | 0 | 22 | 0 | 7.77 | 266 | 17 |
 | bge LoRA r=16 | US Latin | 48710 | 95 | 240 | 565 | 35 | 1.85 | 35788 | 12922 |
 | bge LoRA r=16 | India Latin | 34342 | 96 | 164 | 265 | 57 | 1.53 | 25488 | 8854 |
 | bge LoRA r=16 | India Devanagari | 7868 | 1 | 46 | 23 | 2 | 0.89 | 5703 | 2165 |
