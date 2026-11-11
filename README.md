@@ -125,7 +125,7 @@ Attach them with **Add Input → Datasets**, then run `kaggle/notebooks/01 … 0
 | Notebook | Topic & Method | Kaggle Notebook Link | Test $F_{0.5}$ | Owner |
 |---|---|---|---|---|
 | `06d_ce_bge_moe_head` | MoE head inside BGE cross-encoder (top-2 of 4) | [ayush122222/06d](https://www.kaggle.com/code/ayush122222/notebook7ebbf31256) | **0.98888** | Ayush |
-| `07_moe_fusion_and_results` | Gated Mixture-of-Experts fusion & final results | [ayush122222/07_moe](https://www.kaggle.com/code/ayush122222/notebook2a4366b080) | **0.99481** | Ayush |
+| `07_moe_fusion_and_results` | Gated Mixture-of-Experts fusion & final results | [ayush122222/07_moe](https://www.kaggle.com/code/ayush122222/notebook943a8e720d) | **0.99481** | Ayush |
 
 ### Final Results Summary (`data/small`, Held-out Test Split)
 
