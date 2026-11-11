@@ -1,0 +1,37 @@
+group,tokenizer,fertility,unk_rate,split_words,vocab
+US latin,whitespace,1.0,0.0,0.0,
+US latin,char 3-gram,6.338122037914692,0.0,1.0,
+US latin,mBERT (WordPiece),2.0593898104265405,0.0,0.4966,119547.0
+US latin,IndicBERTv2 (WordPiece),2.038803317535545,0.0,0.4978,250000.0
+US latin,XLM-R (SentencePiece),2.047689573459716,0.0,0.5718,250002.0
+US latin,mDeBERTa (SentencePiece),1.9540876777251184,0.0,0.5744,250102.0
+India latin,whitespace,1.0,0.0,0.0,
+India latin,char 3-gram,6.678077502396276,0.0,1.0,
+India latin,mBERT (WordPiece),2.062029303026154,0.0,0.5016,119547.0
+India latin,IndicBERTv2 (WordPiece),1.769135971518554,0.0,0.3606,250000.0
+India latin,XLM-R (SentencePiece),1.9404354374914419,0.0,0.5326,250002.0
+India latin,mDeBERTa (SentencePiece),1.8730658633438313,0.0,0.5224,250102.0
+devanagari,whitespace,1.0,0.0,0.0,
+devanagari,char 3-gram,6.8181104422925936,0.0,1.0,
+devanagari,mBERT (WordPiece),2.9895315362470556,0.0,0.7148,119547.0
+devanagari,IndicBERTv2 (WordPiece),1.539256739073541,0.0,0.3156,250000.0
+devanagari,XLM-R (SentencePiece),2.1652708714996076,0.0,0.5856,250002.0
+devanagari,mDeBERTa (SentencePiece),2.44922795079822,0.0,0.7234,250102.0
+devanagari (romanised),whitespace,1.0,0.0,0.0,
+devanagari (romanised),char 3-gram,6.521591206490448,0.0,1.0,
+devanagari (romanised),mBERT (WordPiece),2.0774666317717876,0.0,0.6034,119547.0
+devanagari (romanised),IndicBERTv2 (WordPiece),1.922271656634389,0.0,0.515,250000.0
+devanagari (romanised),XLM-R (SentencePiece),2.063203349908401,0.0,0.604,250002.0
+devanagari (romanised),mDeBERTa (SentencePiece),2.153624705574457,0.0,0.6808,250102.0
+malayalam,whitespace,1.0,0.0,0.0,
+malayalam,char 3-gram,7.631206602908424,0.0,1.0,
+malayalam,mBERT (WordPiece),3.903183545132975,0.0,0.7718,119547.0
+malayalam,IndicBERTv2 (WordPiece),1.7120398270666841,0.0,0.3714,250000.0
+malayalam,XLM-R (SentencePiece),2.8211712301847243,0.0,0.7358,250002.0
+malayalam,mDeBERTa (SentencePiece),2.806760120529281,0.0018670649738610904,0.7632,250102.0
+malayalam (romanised),whitespace,1.0,0.0,0.0,
+malayalam (romanised),char 3-gram,6.7426961876064455,0.0,1.0,
+malayalam (romanised),mBERT (WordPiece),2.472160356347439,0.0,0.739,119547.0
+malayalam (romanised),IndicBERTv2 (WordPiece),2.3221538058430498,0.0,0.655,250000.0
+malayalam (romanised),XLM-R (SentencePiece),2.3600157212105333,0.0,0.7266,250002.0
+malayalam (romanised),mDeBERTa (SentencePiece),2.408882483951264,0.0,0.7236,250102.0
