@@ -149,7 +149,7 @@ other Indic     0.91        0.09          < 0.01 each
 |---|----------|----------------|
 | 1 | Easy US Latin | True S1 at TF-IDF rank 1; all models agree. Gate: LightGBM + mDeBERTa dominate. |
 | 2 | Indic script (Devanagari/Malayalam) | Romanisation + lexicon aligns tokens. Gate shifts weight to LightGBM (~70%). Correct. |
-| 3 | Sibling branch / distractor | Same core name, different address. Address features (postcode, house-no) disambiguate. |
+| 3 | Sibling branch / distractor | Same core name, different address. House/unit numbers and dense embeddings disambiguate. |
 | 4 | Failure case | Ambiguous / empty address confuses matchers. Even MoE fails — honest failure analysis. |
 
 ---

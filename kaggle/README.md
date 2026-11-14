@@ -118,7 +118,7 @@ How to run it:
 3. **Run All** in the interactive session (not *Save & Run All*). Loading takes a few minutes.
 4. Open the public `https://….gradio.live` link printed by the last cell. It stays up while the
    session runs. Choose an example from the dropdown (grouped: easy US, Devanagari, Malayalam,
-   TF-IDF wrong, sibling branch, no commas, distractor, hard), type a record, or paste a test id.
+   TF-IDF wrong, sibling branch, distractor, hard), type a record, or paste a test id.
 5. Without Gradio: `show(list(EXAMPLES)[k])` or `show(typed=(name, address, country, 'S2'))` in the
    cell before renders the same five panels in the notebook.
 6. The notebook automatically saves a self-contained fallback HTML file (`demo_fallback.html`) covering

@@ -1141,13 +1141,11 @@ def pick_examples(n=DEMO['EXAMPLES_PER_GROUP']):
         top = d.sort_values(['qi', 'p'], ascending=[True, False]).drop_duplicates('qi').set_index('qi')
         pred = pd.Series(np.where(top.p >= THR.get(best, 0.5), top.s_id, ''), index=top.index)
         q['ok'] = q.qi.map(pred).values == q.q_id.map(TEST_OWNER).fillna('').values
-    nw = q.addr.str.split().str.len()
     G = {'Easy · US, Latin script': q.found & (q.country == 'US') & (q.script == 'latin') & (q.t_tf == 0) & (q.t_rrf == 0),
          'Devanagari script': q.found & (q.script == 'devanagari'),
          'Malayalam script': q.found & (q.script == 'malayalam'),
          'TF-IDF ranks the true S1 lower': q.found & (q.t_tf > 0),
          'Sibling branch among the candidates': q.found & q.qi.isin(sib),
-         'Address without commas': q.found & ~q.addr.str.contains(',') & (nw >= 5),
          'No true match (distractor)': ~q.linked}
     if STORED: G[f'Hard · {short(best)} gets it wrong'] = ~q.ok
     EX = {}

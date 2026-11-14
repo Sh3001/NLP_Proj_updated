@@ -52,7 +52,7 @@ Non-Latin names go through a normalisation pipeline: Unicode NFKC, then romanisa
 "Every record goes through five steps:
 
 1. **Normalise + tokenize** — abbreviation expansion, three tokenizers (mBERT WordPiece, XLM-R SentencePiece, char 3-grams).
-2. **Parse the address** — a rule-based parser and a trained BiLSTM-CRF (notebook 02) tag each address token: house number, street, locality, city, state, postcode.
+2. **Parse the address** — a rule-based parser and a trained BiLSTM-CRF (notebook 02) tag address components: house/unit number, street, locality, city, state.
 3. **Retrieve candidates** — TF-IDF char-3-gram cosine and a fine-tuned multilingual-e5-small bi-encoder each return top-10 candidates; reciprocal-rank fusion gives the final 5.
 4. **Score** — every matcher (LightGBM, three Siamese RNNs, six cross-encoders) scores each candidate pair.
 5. **Fuse + decide** — the Gated Mixture of Experts from notebook 07 combines the matchers; the decision rule picks the best candidate if its probability exceeds the val-tuned threshold."
@@ -106,12 +106,12 @@ We compare against: mean of calibrated experts, logistic-regression stacking, Mo
 ### Record 2 — Devanagari / Malayalam script
 > `show(i=DEMO4[list(DEMO4)[1]])`
 
-**Say:** "Record 2 is an Indian business — the original name is in Devanagari or Malayalam. Watch the normalisation panel: anyascii romanises the script, the learned lexicon further aligns tokens to their English equivalents. On Indic-script pairs the gate shifts weight toward LightGBM's address features (about 75%), with mDeBERTa-v3 as the second expert."
+**Say:** "Record 2 is an Indian business — the original name is in Devanagari or Malayalam. Watch the normalisation panel: anyascii romanises the script, the learned lexicon further aligns tokens to their English equivalents. On Indic-script pairs the gate shifts weight toward LightGBM (about 75%), with mDeBERTa-v3 as the second expert (about 23%)."
 
 ### Record 3 — Sibling branch / distractor
 > `show(i=DEMO4[list(DEMO4)[2]])`
 
-**Say:** "Record 3 is a harder case — a sibling branch or unlinked record appears among the top candidates with the same core business name but a different address. The matchers give moderate scores to both. The gate uses address features (house-number agreement, postcode) to push the right candidate to the top. This is where the parsed address fields add real value over string similarity alone."
+**Say:** "Record 3 is a harder case — a sibling branch or unlinked record appears among the top candidates with the same core business name but a different address. The matchers give moderate scores to both. The model uses street and house number discrepancies (such as number disagreement in the uncurated string) and dense retrieval gaps to push the right candidate to the top, preventing the false positive that name similarity alone would cause."
 
 ### Record 4 — Failure case
 > `show(i=DEMO4[list(DEMO4)[3]])`

@@ -95,7 +95,7 @@ Fusion:  score = σ(Σᵢ wᵢ(x) · (aᵢ zᵢ + bᵢ) + c)
 The gate sees the record's script and address quality. This lets it:
 
 - Route between specialized neural representations (BGE / mDeBERTa) and classical address matching (LightGBM) depending on script and address completeness.
-- Up-weight LightGBM when structured address components (house-number and postcode) are present.
+- Up-weight LightGBM when street numbers and non-empty address fields are present.
 - Down-weight models that are overconfident or underperform in a specific
   sub-domain, without manual per-country tuning.
 
@@ -211,8 +211,7 @@ not yet been run, its row is absent from the table.
 
 ### B.4 Key Observations
 
-1. **LightGBM is a strong baseline.** Parsed address features (house-number
-   equality, postcode equality, city similarity) provide signal that raw string
+1. **LightGBM is a strong baseline.** Address features (number matching, dense retrieval gaps, city similarity) provide signal that raw string
    similarity misses, particularly for US addresses with structured formatting.
 
 2. **Cross-encoders substantially outperform character-level RNNs on Indic
@@ -242,7 +241,7 @@ not yet been run, its row is absent from the table.
 |---|----------|------------------|-------------------|---------------|
 | 1 | Easy US Latin | True S1 at TF-IDF rank 1 | High weight on LightGBM + mDeBERTa-v3; all models agree | Correct |
 | 2 | Indic script | True S1 retrieved (romanisation needed) | Gate shifts weight to LightGBM (~70%); lexicon-corrected tokens help | Correct |
-| 3 | Sibling branch | True S1 and sibling both in top-5 | Address features (postcode / house-number) separate them | Usually correct |
+| 3 | Sibling branch | True S1 and sibling both in top-5 | Numeric tokens (house/unit numbers) and dense retrieval separate them | Usually correct |
 | 4 | Failure case | True S1 may be in candidates | Overconfident matcher gets down-weighted; MoE may still fail | Wrong |
 
 ### B.6 Strengths and Limitations

@@ -190,8 +190,8 @@ This maintains full academic rigor across all course topic categories.
 - **CLI Demo (`kaggle/scripts/08_demo.py`):** Verified. Loads trained models or falls back to precomputed scores smoothly.
 - **Standalone Web Fallback (`demo/demo_fallback.html`):** Verified. Contains clean CSS, full interactive pair selection, dynamic gating visualizations, and instant score updates.
 - **Address Without Commas Group:**
-  - Team member Rishi noted that the `'Address without commas'` filter group in `08_demo.py` is empty because in the real `data/small` dataset, every address has commas.
-  - **Verification:** The sampling logic `pool.sample(min(len(pool), n))` handles empty filter slices without throwing exceptions (returns 0 pairs gracefully).
+  - Team member Rishi noted that the `'Address without commas'` filter group in `08_demo.py` was empty because in the real `data/small` dataset, every address has commas.
+  - **Resolution:** Dropped the empty filter group from `08_demo` (`build_kaggle.py`, `08_demo.py`, `08_demo.ipynb`) and demo documentation so the demo dropdown only surfaces non-empty categories.
 - **Presentation Readiness:** The demo is completely ready for the live presentation.
 
 ---
