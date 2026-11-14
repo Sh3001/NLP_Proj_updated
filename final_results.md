@@ -12,6 +12,8 @@
 
 The table below summarizes performance across every completed module of the pipeline, from classical baselines to deep cross-encoders and gated ensemble fusion. All thresholds were calibrated exclusively on the validation split and frozen prior to scoring the held-out test split.
 
+> **Which 07 run:** the fusion rows and gate weights here are the committed **7-expert** run (experts 04, 05a, 05b, 06c, 06d, 06e, 06f; `results/*.json`). The per-script analysis (`analysis/out_script/`, `report/section_script_analysis.md`) uses a later **9-expert** rerun that adds 06a and 06b. Its test F0.5: gated MoE 0.99481, LR stacking 0.99477, constant gate 0.99474, LightGBM stacking 0.99470, mean of 9 experts 0.99286. The gated, constant-gate and LR fusions are tied within 0.0001 in both runs.
+
 | Section | Method | Val $F_{0.5}$ | Test $F_{0.5}$ | Test $P$ | Test $R$ | Test $F_{0.5}$ (US) | Test $F_{0.5}$ (India) | Singleton Acc | Parameters | Train Min | Threshold |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | **5 Classical baseline** | GBM (string + parsed-address features) | 0.99286 | **0.99081** | 0.9938 | 0.9873 | 0.98946 | 0.99205 | 0.9857 | 1,609 trees | 4.60 | 0.36 |

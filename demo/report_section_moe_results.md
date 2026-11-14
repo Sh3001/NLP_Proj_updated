@@ -218,12 +218,15 @@ not yet been run, its row is absent from the table.
    distinguish between romanisation variants the way a subword model can.
 
 3. **Cross-encoders (BGE, mDeBERTa) outperform IndicBERTv2 even on Indian scripts**
-   ($p < 10^{-17}$, see Issue #8), though IndicBERTv2 provides native Indic vocabulary coverage. The gating network dynamically weights BGE/mDeBERTa alongside LightGBM's address features across scripts.
+   ($p < 10^{-17}$, see Issue #8), though IndicBERTv2 provides native Indic vocabulary coverage. The gate gives IndicBERTv2 almost no weight (0.2-0.5%); it blends LightGBM (56-84%) and mDeBERTa-v3 (15-40%), moving weight toward LightGBM on Indic scripts.
 
-4. **Input-conditional gating beats constant gating.** The ablation (MoE with
-   constant gate = learned fixed weights, same as a weighted ensemble) is a
-   fairer comparison than the mean of experts and confirms that routing by
-   record properties, not just recalibration, adds value.
+4. **Input-conditional gating does not measurably beat constant gating.** The
+   ablation (MoE with a constant gate = learned fixed weights, a weighted
+   ensemble) scores 0.99474 on test against 0.99480 for the gated MoE, and is
+   higher on val (0.99642 vs 0.99638); LR stacking scores 0.99476. Differences of
+   0.0001 are well inside run-to-run noise (about 0.003 in the 06g reruns). The
+   gain over single models comes from learned, calibrated weights over two
+   complementary experts, not from routing by record properties.
 
 5. **Distractor density caveat.** At training density (1.2 distractors / S1),
    precision is easier to maintain than at leaderboard density (2.3 / S1).
@@ -234,8 +237,8 @@ not yet been run, its row is absent from the table.
 
 | # | Category | Retrieval outcome | Gating observation | Final verdict |
 |---|----------|------------------|-------------------|---------------|
-| 1 | Easy US Latin | True S1 at TF-IDF rank 1 | High weight on LightGBM + BGE full FT; all models agree | Correct |
-| 2 | Indic script | True S1 retrieved (romanisation needed) | Gate up-weights IndicBERTv2; lexicon-corrected tokens help | Correct |
+| 1 | Easy US Latin | True S1 at TF-IDF rank 1 | High weight on LightGBM + mDeBERTa-v3; all models agree | Correct |
+| 2 | Indic script | True S1 retrieved (romanisation needed) | Gate shifts weight to LightGBM (~70%); lexicon-corrected tokens help | Correct |
 | 3 | Sibling branch | True S1 and sibling both in top-5 | Address features (postcode / house-number) separate them | Usually correct |
 | 4 | Failure case | True S1 may be in candidates | Overconfident matcher gets down-weighted; MoE may still fail | Wrong |
 
