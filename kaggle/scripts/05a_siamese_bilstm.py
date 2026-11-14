@@ -288,22 +288,52 @@ def rnn_scores(model, P, bs=2048):
     qa = torch.as_tensor(pos[P.qi.values].values, device=DEVICE); sa = torch.as_tensor(pos[P.si.values].values, device=DEVICE)
     return torch.cat([model.pair(E[qa[a:a + 65536]], E[sa[a:a + 65536]]) for a in range(0, len(qa), 65536)]).float().cpu().numpy()
 
+_u = np.unique(PAIRS['A'].qi.values)                                  # probe records: full-length (100-char) train texts
+_PROBE_IX = _u[XLEN[_u] >= CHAR_MAX] if (XLEN[_u] >= CHAR_MAX).sum() >= 32 else _u[np.argsort(-XLEN[_u])[:256]]
+_PROBE_IX = np.random.default_rng(SEED).choice(_PROBE_IX, min(256, len(_PROBE_IX)), replace=False)
+
+def grad_by_distance(model):
+    # Vanishing-gradient probe: ||d h_T / d x_(T-k)|| for the FORWARD direction, k = 0 .. L-1 characters back,
+    # averaged over 256 long (100-character) training records. Tells how much the state at the last character
+    # still depends on a character k steps earlier. No packing, no pooling: the raw recurrence only.
+    was = model.training; model.train()               # cuDNN RNN backward needs train mode (the RNN has no dropout)
+    x, _ = batch_x(_PROBE_IX); e = model.emb(x).detach().requires_grad_(True)
+    out, _ = model.rnn(e); hid = out.size(-1) // 2
+    g, = torch.autograd.grad(out[:, -1, :hid].float().sum(), e)
+    model.train(was)
+    return g.float().norm(dim=-1).mean(0).flip(0).cpu().numpy().tolist()   # index k = distance from the last character
+
 model = SiameseRNN(len(CH2I) + 2, CELL).to(DEVICE)
 opt = torch.optim.Adam(model.parameters(), lr=1e-3)
 A = PAIRS['A']; y_all = A.label.values.astype(np.float32); rng = np.random.default_rng(SEED); t0 = time.time()
+yv = torch.as_tensor(PAIRS['val'].label.values, dtype=torch.float32)
+HIST = {'method': METHOD, 'cell': CELL, 'quick': QUICK_RUN, 'epochs': [], 'grad_by_distance': {'init': grad_by_distance(model)}}
 for ep in range(CFG['EPOCHS']):
-    model.train(); idx = rng.permutation(len(A))[:CFG['PAIRS_PER_EPOCH']]; tot = 0
+    model.train(); idx = rng.permutation(len(A))[:CFG['PAIRS_PER_EPOCH']]; tot = 0; gn = []; te = time.time()
     for a in range(0, len(idx), 512):
         b = idx[a:a + 512]
         loss = F.binary_cross_entropy_with_logits(model(*batch_x(A.qi.values[b]), *batch_x(A.si.values[b])), torch.as_tensor(y_all[b], device=DEVICE))
-        opt.zero_grad(); loss.backward(); nn.utils.clip_grad_norm_(model.parameters(), 1.0); opt.step(); tot += loss.item() * len(b)
+        opt.zero_grad(); loss.backward(); gn.append(float(nn.utils.clip_grad_norm_(model.parameters(), 1.0))); opt.step(); tot += loss.item() * len(b)
+    ep_min = (time.time() - te) / 60
     pv = rnn_scores(model, PAIRS['val'])
-    vl = F.binary_cross_entropy_with_logits(torch.as_tensor(pv), torch.as_tensor(PAIRS['val'].label.values, dtype=torch.float32)).item()
-    log(f'{CELL} epoch {ep + 1}/{CFG["EPOCHS"]}: train loss {tot / len(idx):.4f}  val loss {vl:.4f}')
+    vl = F.binary_cross_entropy_with_logits(torch.as_tensor(pv), yv).item()
+    thr_e, f_e, _ = ev('val').tune(best_per_record(PAIRS['val'], sigmoid(pv)))           # val only (tuning split)
+    gn = np.array(gn); gk = grad_by_distance(model)
+    HIST['epochs'].append({'epoch': ep + 1, 'train_loss': tot / len(idx), 'val_loss': vl, 'val_f05': f_e, 'val_thr': thr_e,
+                           'grad_norm_mean': float(gn.mean()), 'grad_norm_max': float(gn.max()), 'clipped_share': float((gn > 1.0).mean()),
+                           'minutes': ep_min})
+    HIST['grad_by_distance'][f'epoch{ep + 1}'] = gk
+    log(f'{CELL} epoch {ep + 1}/{CFG["EPOCHS"]}: train loss {tot / len(idx):.4f}  val loss {vl:.4f}  val F0.5 {f_e:.5f}  '
+        f'grad norm {gn.mean():.3f} (clipped {100 * (gn > 1.0).mean():.0f}%)  d h_T/d x: k=0 {gk[0]:.2e}, k=20 {gk[min(20, len(gk) - 1)]:.2e}, '
+        f'k=50 {gk[min(50, len(gk) - 1)]:.2e}, k=99 {gk[-1]:.2e}')
 train_time = time.time() - t0
 S = {sp: rnn_scores(model, PAIRS[sp]) for sp in ('B', 'val', 'test')}
 save_scores(METHOD, S)
 n_par = sum(p.numel() for p in model.parameters())
+HIST.update(params=n_par, train_min=train_time / 60)
+(OUT / 'diagnostics').mkdir(exist_ok=True)
+json.dump(HIST, open(OUT / 'diagnostics' / f'{safe_name(METHOD)}.json', 'w'), indent=1)
+print(pd.DataFrame(HIST['epochs']).round(5).to_string(index=False))
 report('6 RNN / LSTM', METHOD, sigmoid(S['val']), sigmoid(S['test']), params=f'{n_par / 1e6:.2f}M', train_min=round(train_time / 60, 1))
 (OUT / 'models').mkdir(exist_ok=True)                                  # weights for 08_demo
 torch.save({'method': METHOD, 'cell': CELL, 'ch2i': CH2I, 'char_max': CHAR_MAX, 'state_dict': model.state_dict()},

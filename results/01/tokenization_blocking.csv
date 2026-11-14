@@ -1,0 +1,11 @@
+analyzer,text,R@1,R@5,R@10,R@1 non-Latin records,vocab,sec
+word,raw,0.9729,0.9895,0.9927,0.9536,59722,10.6
+word,romanised,0.9752,0.9907,0.9937,0.9592,58939,11.0
+word,romanised + abbrev.,0.9749,0.9906,0.9936,0.9581,58920,10.8
+word,romanised + abbrev. + lexicon,0.9806,0.993,0.9951,0.9913,58707,10.7
+char 3-gram,not romanised (+ abbrev.),0.9844,0.9945,0.9963,0.9583,22042,26.5
+char 3-gram,romanised + abbrev.,0.9878,0.996,0.9975,0.9768,20093,27.2
+char 3-gram,romanised + abbrev. + lexicon,0.991,0.9973,0.9983,0.9952,20086,27.2
+char 2-4-gram,romanised + abbrev. + lexicon,0.9912,0.9972,0.9983,0.9952,113651,66.5
+XLM-R subwords,raw,0.983,0.994,0.9962,0.9599,16903,14.7
+XLM-R subwords,romanised + abbrev. + lexicon,0.9894,0.9968,0.9979,0.9931,15403,12.1

@@ -74,6 +74,9 @@ use it. 07 skips a model whose pair count does not match.
 * `01`: `tokenizer_stats.csv`, `tokenization_blocking.csv`. `02`: `parser_eval.csv`,
   `prep/parsed_fields.parquet`. `03`: `blocking.json` (recall, ceiling), `prep/*.parquet`.
   `06d`: MoE-head gate statistics.
+  `05a–c`: `diagnostics/<method>.json` (per-epoch train/val loss, val F0.5, gradient norms, and the
+  vanishing-gradient probe ‖∂h_T/∂x_(T−k)‖ by distance k). `python3 analysis/rnn_compare.py <unzipped outputs>`
+  turns the three runs into the comparison table and plots.
 * `07`: `final_results.csv` / `final_results.md` (the table for the report),
   `results_test_f05.png`, `moe_gates.png`, `moe_gate_by_script.csv`.
 

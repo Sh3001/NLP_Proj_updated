@@ -1,0 +1,210 @@
+# Parser examples (val split)
+
+1,636 of 61,516 val records have no comma in the address; 0 of them are non-empty. So the comma-free condition below is a robustness test (commas removed on purpose), not a case found in this data.
+
+
+## B. Commas removed: BiLSTM-CRF exact, rules wrong (BiLSTM-CRF exact on 17,116 of 20,000)
+
+- `Bharat Nagar, Ward No. 4, Sanchi Road, Raisen, MP` (India)
+  - silver (with commas): STREET: sanchi road; LOCALITY: bharat nagar ward no. 4; CITY: raisen; STATE: mp
+  - BiLSTM-CRF (no commas): STREET: sanchi road; LOCALITY: bharat nagar ward no. 4; CITY: raisen; STATE: mp
+  - rules (no commas): STREET: bharat nagar ward no. 4 sanchi road raisen mp
+- `003Rd Floor Platinum Plaza Plot No.24, Pu-4, Behind C-21 Mall, A.b. Road, Indore, MP` (India)
+  - silver (with commas): HOUSE: 003rd floor; STREET: a.b. road; LOCALITY: platinum plaza plot no.24 pu-4; LANDMARK: behind c-21 mall; CITY: indore; STATE: mp
+  - BiLSTM-CRF (no commas): HOUSE: 003rd floor; STREET: a.b. road; LOCALITY: platinum plaza plot no.24 pu-4; LANDMARK: behind c-21 mall; CITY: indore; STATE: mp
+  - rules (no commas): HOUSE: 003rd floor; STREET: platinum plaza plot no.24 pu-4 behind c-21 mall a.b. road indore mp
+- `#87 C/o E K Viswambharan, KL, Thrissur, Elavanaparambil House, Puthenchira North, Thrissur` (India)
+  - silver (with commas): HOUSE: #87; LOCALITY: c/o e k viswambharan thrissur elavanaparambil house puthenchira north; CITY: thrissur; STATE: kl
+  - BiLSTM-CRF (no commas): HOUSE: #87; LOCALITY: c/o e k viswambharan thrissur elavanaparambil house puthenchira north; CITY: thrissur; STATE: kl
+  - rules (no commas): HOUSE: #87; LOCALITY: c/o e k viswambharan kl thrissur elavanaparambil house puthenchira north thrissur
+- `002530 Heather Street, Cornelius, Oregon` (US)
+  - silver (with commas): HOUSE: 002530; STREET: heather street; CITY: cornelius; STATE: oregon
+  - BiLSTM-CRF (no commas): HOUSE: 002530; STREET: heather street; CITY: cornelius; STATE: oregon
+  - rules (no commas): HOUSE: 002530; STREET: heather street cornelius oregon
+- `1915 Claybourne Avenue, Salt Lake City, Utah` (US)
+  - silver (with commas): HOUSE: 1915; STREET: claybourne avenue; CITY: salt lake city; STATE: utah
+  - BiLSTM-CRF (no commas): HOUSE: 1915; STREET: claybourne avenue; CITY: salt lake city; STATE: utah
+  - rules (no commas): HOUSE: 1915; STREET: claybourne avenue salt lake city utah
+- `Bldgno.2351b, Iyyappadi Housecivilstationpo, Calicut, Kozhikode, കേരളം` (India)
+  - silver (with commas): HOUSE: bldgno.2351b; LOCALITY: iyyappadi housecivilstationpo calicut; CITY: kozhikode; STATE: kerlm
+  - BiLSTM-CRF (no commas): HOUSE: bldgno.2351b; LOCALITY: iyyappadi housecivilstationpo calicut; CITY: kozhikode; STATE: kerlm
+  - rules (no commas): HOUSE: bldgno.2351b; LOCALITY: iyyappadi housecivilstationpo calicut kozhikode kerlm
+- `9817 Division Street, Portland, Oregon` (US)
+  - silver (with commas): HOUSE: 9817; STREET: division street; CITY: portland; STATE: oregon
+  - BiLSTM-CRF (no commas): HOUSE: 9817; STREET: division street; CITY: portland; STATE: oregon
+  - rules (no commas): HOUSE: 9817; STREET: division street portland oregon
+- `3887 Sigma Drive, Magna City, UT` (US)
+  - silver (with commas): HOUSE: 3887; STREET: sigma drive; CITY: magna city; STATE: ut
+  - BiLSTM-CRF (no commas): HOUSE: 3887; STREET: sigma drive; CITY: magna city; STATE: ut
+  - rules (no commas): HOUSE: 3887; STREET: sigma drive magna city ut
+- `8/109/A, UZHUVA, PUTHANVELIYIL, PATTANAKKAD, PATTANACAUD, ALAPPUZHA, CHERTHALA, CHERTHALA, കേരളം` (India)
+  - silver (with commas): HOUSE: 8/109/a; LOCALITY: uzhuva puthanveliyil pattanakkad pattanacaud alappuzha cherthala; CITY: cherthala; STATE: kerlm
+  - BiLSTM-CRF (no commas): HOUSE: 8/109/a; LOCALITY: uzhuva puthanveliyil pattanakkad pattanacaud alappuzha cherthala; CITY: cherthala; STATE: kerlm
+  - rules (no commas): HOUSE: 8/109/a; LOCALITY: uzhuva puthanveliyil pattanakkad pattanacaud alappuzha cherthala cherthala kerlm
+- `2655 De Armond Dr, Corvallis, Oregon` (US)
+  - silver (with commas): HOUSE: 2655; STREET: de armond dr; CITY: corvallis; STATE: oregon
+  - BiLSTM-CRF (no commas): HOUSE: 2655; STREET: de armond dr; CITY: corvallis; STATE: oregon
+  - rules (no commas): HOUSE: 2655; STREET: de armond dr corvallis oregon
+- `025/6 BAJRANGPURA, GANDHI NAGAR, ITARSI, ITARSI, HOSHANGABAD, Madhya Pradesh` (India)
+  - silver (with commas): HOUSE: 025/6; LOCALITY: bajrangpura gandhi nagar itarsi itarsi; CITY: hoshangabad; STATE: madhya pradesh
+  - BiLSTM-CRF (no commas): HOUSE: 025/6; LOCALITY: bajrangpura gandhi nagar itarsi itarsi; CITY: hoshangabad; STATE: madhya pradesh
+  - rules (no commas): HOUSE: 025/6; LOCALITY: bajrangpura gandhi nagar itarsi itarsi hoshangabad madhya pradesh
+- `675 175TH PL, GRESHAM, OR` (US)
+  - silver (with commas): HOUSE: 675 175th; STREET: pl; CITY: gresham; STATE: or
+  - BiLSTM-CRF (no commas): HOUSE: 675 175th; STREET: pl; CITY: gresham; STATE: or
+  - rules (no commas): HOUSE: 675 175th; STREET: pl gresham or
+- `352 PALO VERDE DRIVE, WAHSINGTON, UT` (US)
+  - silver (with commas): HOUSE: 352; STREET: palo verde drive; CITY: wahsington; STATE: ut
+  - BiLSTM-CRF (no commas): HOUSE: 352; STREET: palo verde drive; CITY: wahsington; STATE: ut
+  - rules (no commas): HOUSE: 352; STREET: palo verde drive wahsington ut
+- `33/1695D, Vennala P.O., Kochi, Ernakulam, Kerala` (India)
+  - silver (with commas): HOUSE: 33/1695d; LOCALITY: vennala p.o. kochi; CITY: ernakulam; STATE: kerala
+  - BiLSTM-CRF (no commas): HOUSE: 33/1695d; LOCALITY: vennala p.o. kochi; CITY: ernakulam; STATE: kerala
+  - rules (no commas): HOUSE: 33/1695d; LOCALITY: vennala p.o. kochi ernakulam kerala
+- `104-B, Block, Radha Krishna Complex, 10/1, Manoramaganj, Indore, MP` (India)
+  - silver (with commas): HOUSE: 104-b; LOCALITY: block radha krishna complex 10/1 manoramaganj; CITY: indore; STATE: mp
+  - BiLSTM-CRF (no commas): HOUSE: 104-b; LOCALITY: block radha krishna complex 10/1 manoramaganj; CITY: indore; STATE: mp
+  - rules (no commas): HOUSE: 104-b block; LOCALITY: radha krishna complex 10/1 manoramaganj indore mp
+- `Door No. 17/20, Chekkala Vilakom, Kappil P.O, Chirayinkeezhu, Thiruvananthapuram, Trivandrum, Kerala` (India)
+  - silver (with commas): HOUSE: door no. 17/20; LOCALITY: chekkala vilakom kappil p.o chirayinkeezhu thiruvananthapuram; CITY: trivandrum; STATE: kerala
+  - BiLSTM-CRF (no commas): HOUSE: door no. 17/20; LOCALITY: chekkala vilakom kappil p.o chirayinkeezhu thiruvananthapuram; CITY: trivandrum; STATE: kerala
+  - rules (no commas): HOUSE: door no. 17/20; LOCALITY: chekkala vilakom kappil p.o chirayinkeezhu thiruvananthapuram trivandrum kerala
+- `18521 Roberta Road, Lakeview, OR` (US)
+  - silver (with commas): HOUSE: 18521; STREET: roberta road; CITY: lakeview; STATE: or
+  - BiLSTM-CRF (no commas): HOUSE: 18521; STREET: roberta road; CITY: lakeview; STATE: or
+  - rules (no commas): HOUSE: 18521; STREET: roberta road lakeview or
+- `7980 Little Falls Court, Redmond, Oregon` (US)
+  - silver (with commas): HOUSE: 7980; STREET: little falls court; CITY: redmond; STATE: oregon
+  - BiLSTM-CRF (no commas): HOUSE: 7980; STREET: little falls court; CITY: redmond; STATE: oregon
+  - rules (no commas): HOUSE: 7980; STREET: little falls court redmond oregon
+- `##9319 Treble Lane, Portland, Oregon` (US)
+  - silver (with commas): HOUSE: ##9319; STREET: treble lane; CITY: portland; STATE: oregon
+  - BiLSTM-CRF (no commas): HOUSE: ##9319; STREET: treble lane; CITY: portland; STATE: oregon
+  - rules (no commas): HOUSE: ##9319; STREET: treble lane portland oregon
+- `DOOR NO. XI/A-804(13), PULIKKAPARAMBU, THOPPUMPADY, COCHIN, Kerala` (India)
+  - silver (with commas): HOUSE: door no. xi/a-804(13); LOCALITY: pulikkaparambu thoppumpady; CITY: cochin; STATE: kerala
+  - BiLSTM-CRF (no commas): HOUSE: door no. xi/a-804(13); LOCALITY: pulikkaparambu thoppumpady; CITY: cochin; STATE: kerala
+  - rules (no commas): HOUSE: door no. xi/a-804(13); LOCALITY: pulikkaparambu thoppumpady cochin kerala
+- `1755 LEGEND HILLS DRIVE, CLEARFIELD, UT` (US)
+  - silver (with commas): HOUSE: 1755; STREET: legend hills drive; CITY: clearfield; STATE: ut
+  - BiLSTM-CRF (no commas): HOUSE: 1755; STREET: legend hills drive; CITY: clearfield; STATE: ut
+  - rules (no commas): HOUSE: 1755; STREET: legend hills drive clearfield ut
+- `2603 JACK LONDON ST, CORVALLIS, OR` (US)
+  - silver (with commas): HOUSE: 2603; STREET: jack london st; CITY: corvallis; STATE: or
+  - BiLSTM-CRF (no commas): HOUSE: 2603; STREET: jack london st; CITY: corvallis; STATE: or
+  - rules (no commas): HOUSE: 2603; STREET: jack london st corvallis or
+- `Plot No-3, Industrial Estate Govindpura, Bhopal, Madhya Pradesh` (India)
+  - silver (with commas): HOUSE: plot no-3; LOCALITY: industrial estate govindpura; CITY: bhopal; STATE: madhya pradesh
+  - BiLSTM-CRF (no commas): HOUSE: plot no-3; LOCALITY: industrial estate govindpura; CITY: bhopal; STATE: madhya pradesh
+  - rules (no commas): HOUSE: plot no-3; LOCALITY: industrial estate govindpura bhopal madhya pradesh
+- `Happy Valley, 17751. Vogel Court, Oregon` (US)
+  - silver (with commas): HOUSE: 17751.; STREET: vogel court; CITY: happy valley; STATE: oregon
+  - BiLSTM-CRF (no commas): HOUSE: 17751.; STREET: vogel court; CITY: happy valley; STATE: oregon
+  - rules (no commas): STREET: happy valley 17751. vogel court oregon
+- `Plot 25 11/508-D, Ernakulam, Kunnathunad, KL` (India)
+  - silver (with commas): HOUSE: plot 25 11/508-d; LOCALITY: ernakulam; CITY: kunnathunad; STATE: kl
+  - BiLSTM-CRF (no commas): HOUSE: plot 25 11/508-d; LOCALITY: ernakulam; CITY: kunnathunad; STATE: kl
+  - rules (no commas): HOUSE: plot 25 11/508-d; LOCALITY: ernakulam kunnathunad kl
+
+## C. Commas removed: both wrong (vs the silver parse of the comma version)
+
+- `Door No 871 Building No 27-557/2, Abis Arcade, Pattambi Road, Perinthalmanna, Malappuram, Keralam` (India)
+  - silver (with commas): HOUSE: door no 871 building no 27-557/2; STREET: pattambi road; LOCALITY: abis arcade perinthalmanna; CITY: malappuram; STATE: keralam
+  - BiLSTM-CRF (no commas): HOUSE: door no 871 building no 27-557/2; STREET: abis arcade pattambi road; LOCALITY: perinthalmanna; CITY: malappuram; STATE: keralam
+  - rules (no commas): HOUSE: door no 871 building no 27-557/2; STREET: abis arcade pattambi road perinthalmanna malappuram keralam
+- `59/493 Kadungamparambil House, Chalanchery Road, Kochi, Ernakulam, Kerala` (India)
+  - silver (with commas): HOUSE: 59/493 kadungamparambil house; STREET: chalanchery road; LOCALITY: kochi; CITY: ernakulam; STATE: kerala
+  - BiLSTM-CRF (no commas): HOUSE: 59/493; STREET: kadungamparambil house chalanchery road; LOCALITY: kochi; CITY: ernakulam; STATE: kerala
+  - rules (no commas): HOUSE: 59/493; STREET: kadungamparambil house chalanchery road kochi ernakulam kerala
+- `NO A-93 SHOP NO-FF-68, MINAL SHOPPING MAUL RAJHOMES MINAL RESIDENCY, J.K. ROAD, BHOPAL, Madhya Pradesh` (India)
+  - silver (with commas): HOUSE: no a-93 shop no-ff-68; STREET: j.k. road; LOCALITY: minal shopping maul rajhomes minal residency; CITY: bhopal; STATE: madhya pradesh
+  - BiLSTM-CRF (no commas): HOUSE: no a-93 shop no-ff-68; STREET: minal shopping maul rajhomes minal residency j.k. road; CITY: bhopal; STATE: madhya pradesh
+  - rules (no commas): HOUSE: no a-93 shop no-ff-68; STREET: minal shopping maul rajhomes minal residency j.k. road bhopal madhya pradesh
+- `H.NO 5/3412 Q11 1ST FLOOR EMARALD MALL MAVOOR ROAD, KOZHIKODE, Keralam` (India)
+  - silver (with commas): HOUSE: h.no 5/3412 q11 1st floor; STREET: emarald mall mavoor road; CITY: kozhikode; STATE: keralam
+  - BiLSTM-CRF (no commas): HOUSE: h.no 5/3412 q11; STREET: mavoor road; LOCALITY: 1st floor emarald mall; CITY: kozhikode; STATE: keralam
+  - rules (no commas): HOUSE: h.no 5/3412 q11 1st floor; STREET: emarald mall mavoor road kozhikode keralam
+- `ANJINATTAYIL HOUSE, MARANCHERI (PO), PONANI, MALAPPURAM, കേരളം` (India)
+  - silver (with commas): HOUSE: anjinattayil house; LOCALITY: marancheri (po) ponani; CITY: malappuram; STATE: kerlm
+  - BiLSTM-CRF (no commas): LOCALITY: anjinattayil house marancheri (po) ponani; CITY: malappuram; STATE: kerlm
+  - rules (no commas): LOCALITY: anjinattayil house marancheri (po) ponani malappuram kerlm
+- `H.NO #540 DOOR NO: 33/3385D, SURVEY NO: 158/2 ARAKKAKADAVU - ALINCHUVADU ROAD CORNER, V, ENNALA P O, KOCHI, Kerala` (India)
+  - silver (with commas): HOUSE: h.no #540 door; STREET: survey no: 158/2 arakkakadavu - alinchuvadu road corner; LOCALITY: no: 33/3385d v ennala p o; CITY: kochi; STATE: kerala
+  - BiLSTM-CRF (no commas): HOUSE: h.no #540 door; STREET: arakkakadavu - alinchuvadu road; LOCALITY: no: 33/3385d survey no: 158/2 corner v ennala p o; CITY: kochi; STATE: kerala
+  - rules (no commas): HOUSE: h.no #540 door; STREET: no: 33/3385d survey no: 158/2 arakkakadavu - alinchuvadu road corner v ennala p o kochi kerala
+- `XX1/442 NEAR METRO HEALTHCARE, HINDI PRACHAR MAN, DAL ROAD, IRINJALAKUDA, Kerala` (India)
+  - silver (with commas): HOUSE: xx1/442; STREET: dal road; LOCALITY: near metro healthcare hindi prachar man; CITY: irinjalakuda; STATE: kerala
+  - BiLSTM-CRF (no commas): HOUSE: xx1/442; STREET: man dal road; LANDMARK: near metro healthcare hindi prachar; CITY: irinjalakuda; STATE: kerala
+  - rules (no commas): HOUSE: xx1/442; STREET: near metro healthcare hindi prachar man dal road irinjalakuda kerala
+- `BLOCK C-63 8/291, G M BUILDING, MANA ROAD, P O PERINGODE, കേരളം` (India)
+  - silver (with commas): HOUSE: block c-63 8/291; STREET: mana road; LOCALITY: g m building; CITY: p o peringode; STATE: kerlm
+  - BiLSTM-CRF (no commas): HOUSE: block c-63 8/291; STREET: g m building mana road p o; CITY: peringode; STATE: kerlm
+  - rules (no commas): HOUSE: block c-63 8/291; STREET: g m building mana road p o peringode kerlm
+- `No 70 Basement, Below State Bank Of India, Radha Krishna Apartment, St. Paul School Road, Gwalior, MP` (India)
+  - silver (with commas): HOUSE: no 70; STREET: st. paul school road; LOCALITY: basement below state bank of india radha krishna apartment; CITY: gwalior; STATE: mp
+  - BiLSTM-CRF (no commas): HOUSE: no 70; STREET: radha krishna apartment st. paul school road; LOCALITY: basement below state bank of india; CITY: gwalior; STATE: mp
+  - rules (no commas): HOUSE: no 70; STREET: basement below state bank of india radha krishna apartment st. paul school road gwalior mp
+- `Ernakulam, Keralam, Kochi, Nh-47 Bypass, Kundanoor Junction, Maradu, Amv Towers` (India)
+  - silver (with commas): STREET: nh-47 bypass; LOCALITY: ernakulam kochi kundanoor junction maradu; CITY: amv towers; STATE: keralam
+  - BiLSTM-CRF (no commas): STREET: kochi nh-47 bypass kundanoor junction; LOCALITY: ernakulam maradu amv towers; STATE: keralam
+  - rules (no commas): STREET: ernakulam keralam kochi nh-47 bypass kundanoor junction maradu amv towers
+- `31 AB ROAD ONAM PLAZA, OFFICE NO602, OLD PALASIYA, INDORE, Madhya Pradesh` (India)
+  - silver (with commas): HOUSE: 31; STREET: ab road onam plaza; LOCALITY: office no602 old palasiya; CITY: indore; STATE: madhya pradesh
+  - BiLSTM-CRF (no commas): HOUSE: 31; STREET: ab road; LOCALITY: onam plaza office no602 old palasiya; CITY: indore; STATE: madhya pradesh
+  - rules (no commas): HOUSE: 31; STREET: ab road onam plaza office no602 old palasiya indore madhya pradesh
+- `H.no 70 New Ci Park View, Kolar Road, Bhopal, MP` (India)
+  - silver (with commas): HOUSE: h.no 70; STREET: kolar road; LOCALITY: new ci park view; CITY: bhopal; STATE: mp
+  - BiLSTM-CRF (no commas): HOUSE: h.no 70; STREET: new ci park view kolar road; CITY: bhopal; STATE: mp
+  - rules (no commas): HOUSE: h.no 70; STREET: new ci park view kolar road bhopal mp
+- `Thiruvananthapuram, KL, Nanthancode, Tc 24/3088 Ushhsandya Building, Kowdiar Devasom Board Road, Kowdiar` (India)
+  - silver (with commas): STREET: kowdiar devasom board road; LOCALITY: thiruvananthapuram nanthancode tc 24/3088 ushhsandya building; CITY: kowdiar; STATE: kl
+  - BiLSTM-CRF (no commas): STREET: nanthancode tc 24/3088 ushhsandya building kowdiar devasom board road kowdiar; LOCALITY: thiruvananthapuram; STATE: kl
+  - rules (no commas): STREET: thiruvananthapuram kl nanthancode tc 24/3088 ushhsandya building kowdiar devasom board road kowdiar
+- `No 16., 1St Floor, Kothanur Main Road, Krishna Nagar J P Nagar 7Th Phase, Bangalore, KA` (India)
+  - silver (with commas): HOUSE: no 16.; STREET: kothanur main road; LOCALITY: 1st floor krishna nagar j p nagar 7th phase; CITY: bangalore; STATE: ka
+  - BiLSTM-CRF (no commas): HOUSE: no 16. 1st floor; STREET: kothanur main road; LOCALITY: krishna nagar j p nagar 7th phase; CITY: bangalore; STATE: ka
+  - rules (no commas): HOUSE: no 16. 1st floor; STREET: kothanur main road krishna nagar j p nagar 7th phase bangalore ka
+- `C/O As Bava, Alinga Parambil House, Ernakulam, Kerala` (India)
+  - silver (with commas): LOCALITY: c/o as bava alinga parambil house; CITY: ernakulam; STATE: kerala
+  - BiLSTM-CRF (no commas): HOUSE: c/o as bava alinga parambil house; CITY: ernakulam; STATE: kerala
+  - rules (no commas): LOCALITY: c/o as bava alinga parambil house ernakulam kerala
+- `No 39/28, 2Nd Floor, Rajaji Rd, Cochi, Er, Ernakulam, കേരളം` (India)
+  - silver (with commas): HOUSE: no 39/28; STREET: rajaji rd; LOCALITY: 2nd floor cochi er; CITY: ernakulam; STATE: kerlm
+  - BiLSTM-CRF (no commas): HOUSE: no 39/28 2nd floor; STREET: rajaji rd cochi er; CITY: ernakulam; STATE: kerlm
+  - rules (no commas): HOUSE: no 39/28 2nd floor; STREET: rajaji rd cochi er ernakulam kerlm
+- `WARD NO. 10, SHUJALPUR ROAD INFRONT OF MARKETING SOCIETY, AKODIA, Madhya Pradesh` (India)
+  - silver (with commas): HOUSE: ward no. 10; STREET: shujalpur road infront of marketing society; CITY: akodia; STATE: madhya pradesh
+  - BiLSTM-CRF (no commas): HOUSE: ward no. 10; STREET: shujalpur road; LANDMARK: infront of marketing society; CITY: akodia; STATE: madhya pradesh
+  - rules (no commas): HOUSE: ward no. 10; STREET: shujalpur road infront of marketing society akodia madhya pradesh
+- `Door No 445 Chirakkekaran House, Tc No.33/630, St Jhons House Thrissur Corporation, Chiyyaram, Thrissur, KL` (India)
+  - silver (with commas): HOUSE: door no 445 chirakkekaran house; STREET: st jhons house thrissur corporation; LOCALITY: tc no.33/630 chiyyaram; CITY: thrissur; STATE: kl
+  - BiLSTM-CRF (no commas): HOUSE: door no 445; STREET: chirakkekaran house tc no.33/630 st jhons house; LOCALITY: thrissur corporation chiyyaram; CITY: thrissur; STATE: kl
+  - rules (no commas): HOUSE: door no 445; STREET: chirakkekaran house tc no.33/630 st jhons house thrissur corporation chiyyaram thrissur kl
+- `KP TOWER 4/490-K, 4/490-J, NIT POST, Kerala` (India)
+  - silver (with commas): LOCALITY: kp tower 4/490-k 4/490-j; CITY: nit post; STATE: kerala
+  - BiLSTM-CRF (no commas): LOCALITY: kp tower 4/490-k 4/490-j nit post; STATE: kerala
+  - rules (no commas): LOCALITY: kp tower 4/490-k 4/490-j nit post kerala
+- `VAASHUNDHARA NAGAR A- 15 NEAR JAIN MANDIR, DAMOH, Madhya Pradesh` (India)
+  - silver (with commas): LOCALITY: vaashundhara nagar a- 15 near jain mandir; CITY: damoh; STATE: madhya pradesh
+  - BiLSTM-CRF (no commas): LOCALITY: vaashundhara nagar a- 15; LANDMARK: near jain mandir; CITY: damoh; STATE: madhya pradesh
+  - rules (no commas): LOCALITY: vaashundhara nagar a- 15 near jain mandir damoh madhya pradesh
+- `C/O ZAHID KHAN, M 49, MUNI NAGAR, INDORE ROAD, DO TALAB, UJJAIN, Madhya Pradesh` (India)
+  - silver (with commas): STREET: indore road; LOCALITY: c/o zahid khan m 49 muni nagar do talab; CITY: ujjain; STATE: madhya pradesh
+  - BiLSTM-CRF (no commas): STREET: c/o zahid khan m 49 muni nagar indore road do talab; CITY: ujjain; STATE: madhya pradesh
+  - rules (no commas): STREET: c/o zahid khan m 49 muni nagar indore road do talab ujjain madhya pradesh
+- `Haritha Nagar, Third Cross Road, Thrikkakara North, Ernakulam, Ernakulam, No.#27/465, KL` (India)
+  - silver (with commas): STREET: third cross road; LOCALITY: haritha nagar thrikkakara north ernakulam no.#27/465; CITY: ernakulam; STATE: kl
+  - BiLSTM-CRF (no commas): STREET: haritha nagar third cross road; LOCALITY: thrikkakara north ernakulam no.#27/465; CITY: ernakulam; STATE: kl
+  - rules (no commas): STREET: haritha nagar third cross road thrikkakara north ernakulam ernakulam no.#27/465 kl
+- `DOOR NO , (OLD NO 37/3608A) FIRST FLOOR, KARUNAKARAN LAN, BANK ROAD, DESABHIMANI, KALOOR, ERNAKULAM, Kerala` (India)
+  - silver (with commas): HOUSE: door no; STREET: bank road; LOCALITY: (old no 37/3608a) first floor karunakaran lan desabhimani kaloor; CITY: ernakulam; STATE: kerala
+  - BiLSTM-CRF (no commas): HOUSE: door no; STREET: karunakaran lan bank road; LOCALITY: (old no 37/3608a) first floor desabhimani kaloor; CITY: ernakulam; STATE: kerala
+  - rules (no commas): HOUSE: door no; STREET: (old no 37/3608a) first floor karunakaran lan bank road desabhimani kaloor ernakulam kerala
+- `Sangli, Maharashtra, Atpadi, Dist.Sangali / Sonarshiddwadi, A/P Sonarshiddwadi Tal.Atpadi` (India)
+  - silver (with commas): LOCALITY: sangli maharashtra atpadi dist.sangali / sonarshiddwadi; CITY: a/p sonarshiddwadi tal.atpadi
+  - BiLSTM-CRF (no commas): LOCALITY: sangli maharashtra atpadi dist.sangali / sonarshiddwadi a/p sonarshiddwadi; CITY: tal.atpadi
+  - rules (no commas): LOCALITY: sangli maharashtra atpadi dist.sangali / sonarshiddwadi a/p sonarshiddwadi tal.atpadi
+- `C/O Bhikam Singh Yadav, Vidhayak Niwas Ramdwara Road, Laxmiganj, Lashkar, Gwalior, Madhya Pradesh` (India)
+  - silver (with commas): STREET: vidhayak niwas ramdwara road; LOCALITY: c/o bhikam singh yadav laxmiganj lashkar; CITY: gwalior; STATE: madhya pradesh
+  - BiLSTM-CRF (no commas): STREET: c/o bhikam singh yadav vidhayak niwas ramdwara road; LOCALITY: laxmiganj lashkar; CITY: gwalior; STATE: madhya pradesh
+  - rules (no commas): STREET: c/o bhikam singh yadav vidhayak niwas ramdwara road laxmiganj lashkar gwalior madhya pradesh

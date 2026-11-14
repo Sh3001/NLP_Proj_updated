@@ -1,0 +1,16 @@
+{
+ "section": "7 Transformers",
+ "method": "CE bge-reranker-base zero-shot",
+ "threshold": 0.28,
+ "val_f05": 0.94192,
+ "test_f05": 0.91674,
+ "test_P": 0.9161,
+ "test_R": 0.9595,
+ "test_singleton_acc": 0.6868,
+ "quick": false,
+ "test_f05_India": 0.90712,
+ "test_f05_US": 0.92713,
+ "params": "278M (0.0% trained)",
+ "train_min": 0.0,
+ "gpu_mem_gb": 1.04
+}
