@@ -1,3 +1,5 @@
+> Final 07 run: **9 experts** (04, 05a, 05b, 06a–f), Kaggle `notebook2a4366b080`. The per-script analysis (`analysis/out_script/`) uses the same run.
+
 | section | method | val_f05 | test_f05 | test_P | test_R | test_f05_US | test_f05_India | test_pair_f1 | test_singleton_acc | params | train_min | threshold |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | 5 Classical baseline | GBM (string + parsed-address features) | 0.99286 | 0.99081 | 0.9938 | 0.9873 | 0.98946 | 0.99205 |  | 0.9857 | 1609 trees | 4.6 | 0.36 |
