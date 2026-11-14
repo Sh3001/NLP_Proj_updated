@@ -1,0 +1,54 @@
+% Author: Akshat (condensed from report/section_data_tokenization_retrieval.md, part D)
+\section{Data, splits and metric}
+\label{sec:data}
+
+\paragraph{Task and decision rule.} Each S2/S3 record is linked to at most one S1 entity; 26\% are linked to
+none. Every model uses the same \textbf{decision rule}: a record is assigned to its best-scoring S1 candidate
+if the score reaches a threshold $\tau$, and to no S1 otherwise. This is the mention-ranking formulation of
+coreference with a dummy antecedent~\citep{lee2017end}: each record either picks its best antecedent or
+starts a new cluster.
+
+\paragraph{Metric.} For every S1 entity we compare the set of S2/S3 records predicted for it with its true
+set, compute \fhalf, and average over all S1 entities (macro \fhalf). Singletons, i.e.\ S1 entities with no
+true match, are included and score 1 only if nothing is linked to them. Our implementation scores 1.0 on the
+ground truth, 0.05585 on an empty prediction (the singleton share), and 0.87114 when the last true record of
+every S1 entity is dropped (P 1.0, R 0.66).
+
+\paragraph{Splits.} The official test set has no labels, so all results come from splits of the labelled
+training data. The unit is the \textbf{S1 entity}, split 70/10/20 into train/val/test; linked S2/S3 records
+follow their S1, so no business is seen in both training and test. Splits are stratified by country $\times$
+number of true matches (0 / 1--3 / 4+). Unlinked S2/S3 records (distractors) are spread in the same
+proportions by a hash of their id, which keeps the distractor density of the original data. All random
+choices use BLAKE2b hashes. We tried CRC32 first, but CRC hashes of one id under different seeds are
+correlated.
+
+\paragraph{Regional subset.} Training on the full data (2.2M S1 entities) is beyond free Kaggle T4 GPUs,
+so we keep four \emph{whole} states: Oregon and Utah (US), Kerala and Madhya Pradesh (India). Whole states
+keep a region's near-duplicate businesses together, so matching stays as hard as on the full data.
+States are spelled differently in each source (\emph{TX}/\emph{Texas}). The split script learns the mapping
+from address components to states from the ground-truth links: 81 canonical states, 15,095 spellings.
+Table~\ref{tab:splits} gives the sizes.
+
+\begin{table}[h]
+\centering\small
+\begin{tabular}{lrrrrrr}
+\toprule
+split & S1 (US / India) & singletons & true links & S2 & S3 & unlinked pool \\
+\midrule
+train & 75,353 (36,238 / 39,115) & 4,169 & 261,183 & 173,057 & 182,320 & 94,194 (26.5\%) \\
+val   & 10,764 (5,176 / 5,588)    & 595   & 37,236  & 24,896  & 25,856  & 13,516 (26.6\%) \\
+test  & 21,529 (10,353 / 11,176)  & 1,191 & 74,619  & 49,479  & 52,095  & 26,955 (26.5\%) \\
+\bottomrule
+\end{tabular}
+\caption{Splits of the regional subset (\texttt{data/small}).}
+\label{tab:splits}
+\end{table}
+
+\paragraph{Protocol.} Everything (models, TF-IDF vocabularies, the transliteration lexicon, normalisation
+rules) is fitted on train. Hyper-parameters and thresholds are tuned on val. Test is scored once per final
+model, and its labels are read only inside the final scoring function.
+
+\paragraph{Limitations of the splits.} (i)~Our splits have about 1.2 unlinked records per S1 entity; on the
+official test set we measured about 2.3 during the challenge. Our \fhalf{} is therefore optimistic, mostly in
+precision. (ii)~The subset holds about 3.5\% of the S1 entities, so absolute numbers are not those of a
+full-data model; the ranking of methods should carry over.

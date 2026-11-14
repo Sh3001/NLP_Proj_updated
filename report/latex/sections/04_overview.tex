@@ -1,0 +1,59 @@
+% Author: Keshav
+\section{System overview}
+\label{sec:overview}
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[
+  box/.style={draw, rounded corners=2pt, align=center, font=\small, inner sep=4pt, text width=#1},
+  box/.default=3.4cm,
+  arr/.style={-{Stealth[length=2mm]}, thick}]
+\node[box=2.6cm] (raw) {S1, S2, S3 records\\ name + address};
+\node[box, right=0.6cm of raw] (norm) {\textbf{Normalisation}\\ NFKC, romanisation,\\ learned lexicon,\\ abbreviations};
+\node[box=3.8cm, right=0.6cm of norm] (cand) {\textbf{Candidates} (\nb{03})\\ char 3-gram TF-IDF\\ + fine-tuned e5, RRF\\ $\rightarrow$ top 5 S1 per record};
+\node[box=3.6cm, below=1.1cm of norm] (m05) {\textbf{Siamese char-RNNs}\\ (\nb{05a}--\nb{c})};
+\node[box=3.6cm, left=0.5cm of m05] (m06) {\textbf{Cross-encoders}\\ (\nb{06a}--\nb{f}, Ditto \nb{06g})};
+\node[box=3.6cm, right=0.5cm of m05] (m04) {\textbf{LightGBM} (\nb{04})\\ 48 pair features};
+\node[box=2.6cm, right=0.5cm of m04] (m02) {\textbf{BiLSTM-CRF}\\ address parser (\nb{02})};
+\node[box=4.6cm, below=0.9cm of m05] (moe) {\textbf{Gated MoE fusion} (\nb{07})\\ trained on held-out part B};
+\node[box=4.6cm, below=0.6cm of moe] (dec) {best candidate if $p \ge \tau$ ($\tau$ tuned on val)};
+\draw[arr] (raw) -- (norm);
+\draw[arr] (norm) -- (cand);
+\draw[arr] (cand.south) -- ++(0,-0.5) -| (m04.north);
+\draw[arr] (cand.south) -- ++(0,-0.5) -| (m05.north);
+\draw[arr] (cand.south) -- ++(0,-0.5) -| (m06.north);
+\draw[arr] (m02) -- (m04);
+\draw[arr] (m06.south) |- (moe.west);
+\draw[arr] (m05) -- (moe);
+\draw[arr] (m04.south) |- (moe.east);
+\draw[arr] (moe) -- (dec);
+\end{tikzpicture}
+\caption{Pipeline. Every matcher scores the same candidate pairs and saves logits; the fusion learns how
+much to trust each matcher. Numbers in parentheses are the project notebooks.}
+\label{fig:pipeline}
+\end{figure}
+
+Figure~\ref{fig:pipeline} shows the pipeline. It is implemented as a series of Kaggle notebooks generated
+from one source file, so all of them share the data loading, normalisation and evaluation code.
+
+\paragraph{Normalisation.} All text goes through one shared step: Unicode NFKC, romanisation of
+non-Latin scripts, lower-casing, abbreviation expansion, and a transliteration lexicon of 316 words learned
+from the training links (\S\ref{sec:tok}). Matchers read three views of a record:
+\begin{itemize}
+  \item TF-IDF and the string features read the fully normalised text;
+  \item the Siamese RNNs read the normalised \texttt{name | address}, cut at 100 characters;
+  \item the e5 retriever and the cross-encoders read \texttt{ce\_text}: the original name, then its
+        romanisation if it is not in Latin script, then the romanised address. The original-script name
+        thus reaches their subword tokenizers.
+\end{itemize}
+
+\paragraph{Shared matcher contract.} Every matcher
+\begin{enumerate*}[label=(\roman*)]
+  \item scores the same top-5 candidate pairs from \nb{03},
+  \item saves its logits for the train part B, val and test pairs,
+  \item applies the decision rule of \S\ref{sec:data} with a threshold tuned on val, and
+  \item scores test once.
+\end{enumerate*}
+The training pairs are divided by a hash of the S1 entity into part A (85\%, 1,509,720 pairs), on which
+the matchers train, and part B (15\%, 267,165 pairs), which no matcher sees and on which the fusion is
+trained.

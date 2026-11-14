@@ -1,0 +1,17 @@
+% Author: Keshav
+\begin{abstract}
+We link noisy business records from two secondary sources to a reference registry of US and Indian
+businesses whose names and addresses are written in Latin, Devanagari, Malayalam and other Indic scripts.
+Every model is evaluated with the competition metric, macro \fhalf{} per registry entity, on a held-out
+split of four whole states (21,529 test entities). A shared normalisation step romanises non-Latin text
+and applies a transliteration lexicon learned from the training links. Candidates come from character
+3-gram TF-IDF and a fine-tuned multilingual-e5 bi-encoder, fused by reciprocal rank fusion (top 5,
+ceiling 0.99957). On the same candidate pairs we compare matchers from three model families: a LightGBM
+model over edit-distance and retrieval features (0.9908), Siamese character RNNs (best 0.9834), and
+transformer cross-encoders: zero-shot, fully fine-tuned, LoRA, a Mixture-of-Experts head,
+IndicBERTv2, mDeBERTa-v3 and Ditto (best single model 0.9940). A gated Mixture of Experts over nine
+matchers reaches 0.9948. Four findings stand out. Task fine-tuning matters more than the backbone
+(zero-shot 0.9167 vs.\ fine-tuned 0.9912). The classical model is competitive because 83\% of its gain
+comes from the fine-tuned retriever. An Indic-specific backbone loses to a multilingual reranker even on
+Indic scripts. The fusion gain comes from combining two complementary experts, not from per-pair routing.
+\end{abstract}

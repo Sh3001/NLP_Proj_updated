@@ -1,0 +1,62 @@
+% Author: Keshav (condensed from report/section_parsing.md)
+\section{Address parsing with a BiLSTM-CRF}
+\label{sec:parsing}
+
+Two branches of one chain often differ only in the house number or the street, so a matcher should be able
+to compare addresses field by field. A parser labels each address token with one of the tags
+\texttt{HOUSE}, \texttt{STREET}, \texttt{LOCALITY}, \texttt{LANDMARK}, \texttt{CITY}, \texttt{STATE}, \texttt{POSTCODE},
+plus \texttt{SEP} for commas. This is sequence labelling, and a field is a maximal run of one tag:
+
+\begin{center}\small
+\begin{tabular}{cccccc}
+\texttt{003rd floor} & \texttt{platinum plaza plot no.24 pu-4} & \texttt{behind c-21 mall} & \texttt{a.b.\ road} & \texttt{indore} & \texttt{mp} \\
+\textsc{house} & \textsc{locality} & \textsc{landmark} & \textsc{street} & \textsc{city} & \textsc{state}
+\end{tabular}
+\end{center}
+
+\paragraph{Silver labels.} There are no gold parses, so labels come from a rule parser that relies on the
+commas between components. It finds the state at the end, the city before it, and leading house numbers,
+and it tags landmark and street phrases by keywords. State spellings are learned on train: a component
+that occurs at least 30 times and is the last component in at least 60\% of its occurrences. This gives 42
+spellings, including romanised ones such as \emph{kerlm} for {\mlym കേരളം}. Without commas, the rules
+cannot find component boundaries at all.
+
+\paragraph{Model.} Each token is represented by a word embedding (100 dimensions; 30,000 most frequent
+training tokens, digits mapped to 0) concatenated with a character BiLSTM ($2\times32$), which covers unseen
+house numbers and spelling variants. A 2-layer BiLSTM ($2\times128$) produces emission scores for the 8 tags.
+A CRF output layer~\citep{lafferty2001crf} scores whole tag sequences with learned transitions
+(\textsc{city}$\to$\textsc{state} likely, \textsc{state}$\to$\textsc{house} rare), trained by maximum
+likelihood and decoded with Viterbi~\citep{huang2015bidirectional,lample2016neural}. The model has 2.72M
+parameters. \textbf{Training trick:} the silver labels are computed on the address with commas. Then, for
+half of the training addresses, the comma tokens are deleted from both tokens and tags, so the model must
+learn the boundaries from the words themselves. It is trained on 120,000 training addresses for 3 epochs
+(Adam, 1.4 minutes on a T4).
+
+\begin{table}[h]
+\centering\small
+\begin{tabular}{llccc}
+\toprule
+input & parser & token accuracy & macro F1 & exact address \\
+\midrule
+with commas    & rules      & 1.0000 & 1.0000 & 1.0000 \\
+with commas    & BiLSTM-CRF & 0.9994 & 0.9989 & 0.9969 \\
+commas removed & rules      & 0.5758 & 0.3691 & 0.0000 \\
+commas removed & BiLSTM-CRF & \textbf{0.9500} & \textbf{0.9063} & \textbf{0.8545} \\
+\bottomrule
+\end{tabular}
+\caption{Parsing 10,000 val addresses, against the silver labels. Macro F1 over the six tags that occur.}
+\label{tab:parser}
+\end{table}
+
+\paragraph{Results.} With commas, the rules score 1.0 by construction and the BiLSTM-CRF reproduces them on
+99.7\% of addresses (Table~\ref{tab:parser}). The real test is the address without commas. There the rules
+put everything after the house number into one field and get no address fully right, while the BiLSTM-CRF
+parses 85\% of addresses exactly. \textsc{state} (F1 0.999), \textsc{house} (0.979) and \textsc{city} (0.972)
+are easy. \textsc{street} vs.\ \textsc{locality} is the hard boundary, and \textsc{landmark} has low precision
+(F1 0.639), partly because the model finds landmark phrases in the middle of a component that the rules miss.
+
+\paragraph{Limitations.} The parser is evaluated against the rules that trained it, so the numbers measure
+how well it recovers the comma structure, and rule errors propagate. None of the 615,349 records has a
+postcode the rules recognise, so \textsc{postcode} has no support. Every non-empty address in our data has
+commas, so the comma-free condition is a stress test we created, not a case in this data.
+\S\ref{sec:classical} measures whether the parser helps matching.

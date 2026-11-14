@@ -1,0 +1,98 @@
+% Authors: Shivam (06a, 06b, 06g Ditto), Keshav (06c LoRA, 06f mDeBERTa-v3), Ayush (06d MoE head),
+% Rishi (06e IndicBERTv2).
+% DRAFT by Keshav from the issue comments on #10, #11 and #20, because Shivam's section (#12) was not in yet.
+% Replace or merge with Shivam's text if it arrives.
+\section{Transformer cross-encoders}
+\label{sec:ce}
+
+\paragraph{Setup.} A cross-encoder reads the pair as one sequence, \texttt{[CLS]} $q$ \texttt{[SEP]} $s$, with both
+records as \texttt{ce\_text} (original name, its romanisation, romanised address), and outputs a match
+logit from the \texttt{[CLS]} vector~\citep{nogueira2019passage}. Every trained cross-encoder uses the same
+recipe: one pass over 160,000 part-A candidate pairs (5,000 steps, batch 32, maximum length 96), binary
+cross-entropy, and mixed precision (fp16 autocast) on one T4 GPU. Only the backbone, the learning rate and the
+trained parameters change (Table~\ref{tab:ce}).
+
+\begin{table}[h]
+\centering\small
+\resizebox{\linewidth}{!}{%
+\begin{tabular}{llcccccc}
+\toprule
+ & model & trained params & test \fhalf & P & R & train min & peak GPU \\
+\midrule
+\nb{06a} & bge-reranker-base, zero-shot      & 0               & 0.91674 & 0.9161 & 0.9595 & 0    & 1.04 GB \\
+\nb{06b} & bge-reranker-base, full fine-tune & 278M (100\%)    & 0.99124 & 0.9941 & 0.9878 & 19.4 & 5.53 GB \\
+\nb{06c} & bge-reranker-base, LoRA $r{=}16$  & 1.48M (0.53\%)  & 0.98708 & 0.9900 & 0.9854 & 10.1 & 2.26 GB \\
+\nb{06d} & bge-reranker-base + MoE head      & 279M (100\%)    & 0.98888 & 0.9914 & 0.9871 & 20.0 & -- \\
+\nb{06e} & IndicBERTv2, full fine-tune       & 278M (100\%)    & 0.97611 & 0.9841 & 0.9666 & 19.3 & -- \\
+\nb{06f} & mDeBERTa-v3-base, full, fp32      & 279M (100\%)    & \textbf{0.99402} & 0.9953 & 0.9931 & 60.4 & 9.31 GB \\
+\bottomrule
+\end{tabular}}
+\caption{Cross-encoders on the test split. \nb{06a}--\nb{06d} share the backbone~\citep{xiao2023cpack}.}
+\label{tab:ce}
+\end{table}
+
+\paragraph{Fine-tuning is what matters.} Without training, the reranker reaches 0.9167: high recall, low
+precision, and only 0.687 accuracy on singletons, because it cannot tell a business from its near-duplicate
+branches. Full fine-tuning adds \textbf{+0.0745} test \fhalf{} (0.9912), and singleton accuracy rises to 0.984.
+
+\paragraph{LoRA.} LoRA~\citep{hu2022lora} freezes the backbone and trains rank-16 adapters on the query, key
+and value projections of every layer (0.88M weights) plus the classification head (0.59M). With 0.53\% of the
+weights it keeps \textbf{94\% of the fine-tuning gain} (0.98708). The 0.0042 gap to full fine-tuning is
+consistent: full fine-tuning is ahead in every script group with enough records. LoRA needs 2.4$\times$ less
+GPU memory and a 3\,MB instead of a 1.1\,GB checkpoint, but only 1.9$\times$ less training time, because the
+forward and backward passes still run through the whole frozen backbone. On a 16\,GB T4, full fine-tuning
+of this model fits anyway, so here LoRA is the cheaper option, not the necessary one.
+
+\paragraph{mDeBERTa-v3 is the best single model} (0.9940), on both countries. It must train in fp32:
+DeBERTa-v3 is unstable in fp16, and the T4 has no bf16. Our first run failed silently. The checkpoint is
+stored in fp16, and our library version loads it in that dtype, so without autocast the whole model trained
+in \emph{pure} fp16, with no fp32 master weights. Adam's $\epsilon=10^{-8}$ is 0 in fp16 and its small
+second moments underflow. The loss was NaN from the first logged step, and the model predicted no matches
+(\fhalf{} 0.055). Casting the weights to fp32 fixed it. The cost is 3.1$\times$ the training time of
+\nb{06b} and 1.7$\times$ its memory.
+
+\paragraph{MoE head (\nb{06d}).} The single classification head is replaced by four expert MLPs over the
+\texttt{[CLS]} vector. A linear gate picks the top 2 per pair, with a Switch-style load-balancing
+loss~\citep{shazeer2017outrageously,fedus2022switch} ($\lambda=0.01$). It scores 0.9889, slightly below plain
+fine-tuning of the same backbone. Its experts do not specialise by script: their mean gate weights are almost
+the same in every script ($\approx$0.21 / 0.22 / 0.23 / 0.33).
+
+\paragraph{IndicBERTv2 (\nb{06e})} is the weakest fine-tuned cross-encoder (0.9761), even on Indic scripts;
+\S\ref{sec:script} compares it with bge.
+
+\paragraph{Ditto (\nb{06g}).} We reproduce Ditto~\citep{li2020ditto}:
+\begin{itemize}
+  \item records are serialised with attribute markers (\texttt{[COL] name [VAL] \dots});
+  \item \textbf{DK} (domain knowledge) adds typed address spans from our parser (\S\ref{sec:parsing}) and
+        normalised house numbers;
+  \item \textbf{SU} (summarisation) keeps the highest-TF-IDF tokens instead of truncating;
+  \item \textbf{DA} interpolates the encodings of a pair and an augmented copy (MixDA).
+\end{itemize}
+The backbone is xlm-roberta-base, except R6, which starts from bge-reranker-base. Each run uses 40k
+training pairs and one seed. The ablation was run twice, with rule-parsed and with BiLSTM-CRF-parsed spans
+(Table~\ref{tab:ditto}).
+
+\begin{table}[h]
+\centering\small
+\begin{tabular}{llcc}
+\toprule
+run & backbone & test \fhalf, rule spans & test \fhalf, BiLSTM-CRF spans \\
+\midrule
+R1 plain           & XLM-R & 0.9788 & 0.9782 \\
+R2 +DK             & XLM-R & 0.9803 & 0.9823 \\
+R3 +SU             & XLM-R & 0.9754 & 0.9774 \\
+R4 +DA             & XLM-R & 0.9817 & 0.9761 \\
+R5 +DK+SU+DA       & XLM-R & 0.9779 & 0.9798 \\
+R6 +DK+SU+DA       & bge   & \textbf{0.9821} & \textbf{0.9828} \\
+\bottomrule
+\end{tabular}
+\caption{Ditto ablation, 40k training pairs per run. Table~\ref{tab:main} uses the rule-span runs.}
+\label{tab:ditto}
+\end{table}
+
+R1, R3 and R4 do not use the parser, so their configurations are identical in both runs. They still
+differ by up to 0.0056 (R4), and DA even changes sign against R1 (+0.0029, then $-0.0021$). Run-to-run
+noise is therefore up to about 0.006. DK is the only optimisation that is positive in both runs, and more
+so with our parser (+0.0015 and +0.0041 over R1), but even this is within the noise. With a quarter of the training pairs, the best Ditto run
+(0.9828) stays below \nb{06b} (0.9912). The full-size Ditto run, which would make the two comparable, was not
+completed.

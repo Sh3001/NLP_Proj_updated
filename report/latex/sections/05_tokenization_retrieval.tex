@@ -1,0 +1,104 @@
+% Author: Akshat (condensed from report/section_data_tokenization_retrieval.md, parts T and C)
+\section{Tokenization and candidate generation}
+\label{sec:tok}
+
+\subsection{How tokenizers split each script}
+
+We measured the \emph{fertility}~\citep{rust2021good} of four multilingual tokenizers, i.e.\ subword tokens per
+whitespace word, on val records grouped by country and script, and again on the Devanagari and
+Malayalam records after romanisation (Table~\ref{tab:fertility}).
+
+\begin{table}[h]
+\centering\small
+\resizebox{\linewidth}{!}{%
+\begin{tabular}{lcccccc}
+\toprule
+ & US Latin & India Latin & Devanagari & Deva.\ romanised & Malayalam & Mal.\ romanised \\
+\midrule
+mBERT (WordPiece)           & 2.06 & 2.06 & \textbf{2.99} & 2.08 & \textbf{3.90} & 2.47 \\
+XLM-R (SentencePiece)       & 2.05 & 1.94 & 2.17 & 2.06 & 2.82 & 2.36 \\
+mDeBERTa-v3 (SentencePiece) & 1.95 & 1.87 & 2.45 & 2.15 & 2.81 & 2.41 \\
+IndicBERTv2 (WordPiece)     & 2.04 & 1.77 & \textbf{1.54} & 1.92 & \textbf{1.71} & 2.32 \\
+\bottomrule
+\end{tabular}}
+\caption{Tokens per word on val records.}
+\label{tab:fertility}
+\end{table}
+
+mBERT fragments Indic scripts the most: 3.90 pieces per Malayalam word, falling back to single characters
+and even splitting off the virama. IndicBERTv2 has the lowest fertility on both native scripts. For example,
+it splits {\deva आदित्य प्रॉपर्टीज एलएलपी} (\emph{aditya properties llp}) into 5 pieces, against 10 for
+XLM-R and 13 for mBERT. No tokenizer produces more than 0.2\% unknown tokens, so the cost of a foreign
+script is fragmentation, not unknown words. Romanisation is a trade-off: it brings mBERT from 3.90 to 2.47
+pieces per Malayalam word but makes IndicBERTv2 worse (1.71 to 2.32), because romanised Indian words are
+in no tokenizer's vocabulary. This is why the cross-encoders get both the native name and its romanisation.
+
+\subsection{Tokenization and normalisation for retrieval}
+
+Table~\ref{tab:tfidf} compares TF-IDF analyzers and normalisation steps by the recall of the true S1 entity
+among the top $k$ (same country, val).
+
+\begin{table}[h]
+\centering\small
+\resizebox{\linewidth}{!}{%
+\begin{tabular}{llcccr}
+\toprule
+analyzer & text & R@1 & R@5 & R@1 non-Latin & vocabulary \\
+\midrule
+words         & raw                           & 0.9729 & 0.9895 & 0.9536 & 59,722 \\
+words         & romanised + abbrev.\ + lexicon & 0.9806 & 0.9930 & 0.9913 & 58,707 \\
+char 3-grams  & romanised + abbrev.            & 0.9878 & 0.9960 & 0.9768 & 20,093 \\
+\textbf{char 3-grams} & \textbf{romanised + abbrev.\ + lexicon} & \textbf{0.9910} & \textbf{0.9973} & \textbf{0.9952} & 20,086 \\
+char 2--4-grams & romanised + abbrev.\ + lexicon & 0.9912 & 0.9972 & 0.9952 & 113,651 \\
+XLM-R subwords & romanised + abbrev.\ + lexicon & 0.9894 & 0.9968 & 0.9931 & 15,403 \\
+\bottomrule
+\end{tabular}}
+\caption{TF-IDF retrieval on val. ``Non-Latin'': S2/S3 records whose text is not in Latin script.}
+\label{tab:tfidf}
+\end{table}
+
+The \textbf{transliteration lexicon} is learned from the training links. For each linked pair whose
+romanised non-Latin name has as many words as its S1 name, the words are aligned by position. A romanised
+word becomes an entry if it was aligned with the same English word at least 3 times and in at least 60\% of
+its occurrences (\emph{praivtt}$\to$\emph{private}, \emph{knstrksns}$\to$\emph{constructions}). This is a
+noisy-channel view~\citep{kernighan1990spelling}: a record is an S1 name transliterated to Latin letters,
+then spelled phonetically. Romanisation inverts the first step, and the lexicon inverts the most common
+errors of the second. On non-Latin records, the lexicon matters more than the tokenizer: it raises R@1 of
+character 3-grams from 0.977 to 0.995, and with it all analyzers end within 0.004 of each other. Character
+3-grams are the best analyzer overall. 2--4-grams tie at 5.7$\times$ the vocabulary, so we use 3-grams.
+
+\subsection{Candidate generation}
+
+Scoring all test S2/S3 records (about 100k) against all S1 entities of their country (about 11k) means
+about $10^9$ pairs. Blocking keeps the 5 most likely S1 entities per record, and every matcher scores the
+same 507,870 test pairs. We search only within the record's country, with three retrievers:
+\begin{itemize}
+  \item TF-IDF over character 3-grams of the normalised text;
+  \item multilingual-e5-small~\citep{wang2024multilingual} (118M parameters), zero-shot;
+  \item the same model fine-tuned for 3.5 minutes on 100k linked training pairs (part A), with a symmetric
+        in-batch contrastive loss as in DPR~\citep{karpukhin2020dense}.
+\end{itemize}
+The TF-IDF and fine-tuned e5 lists are merged with reciprocal rank fusion~\citep{cormack2009reciprocal},
+score $\sum 1/(60+\text{rank})$, and the top 5 are kept.
+
+\begin{table}[h]
+\centering\small
+\begin{tabular}{lccc}
+\toprule
+retriever & R@1 & R@5 & R@10 \\
+\midrule
+TF-IDF char 3-gram   & 0.9912 & 0.9972 & 0.9983 \\
+e5-small zero-shot   & 0.9883 & 0.9954 & 0.9968 \\
+e5-small fine-tuned  & \textbf{0.9940} & 0.9988 & \textbf{0.9994} \\
+RRF fusion, top 5    & -- & \textbf{0.9989} & -- \\
+\bottomrule
+\end{tabular}
+\caption{Candidate retrieval on val.}
+\label{tab:retrieval}
+\end{table}
+
+Zero-shot dense retrieval loses to character n-grams (R@1 0.9883 vs.\ 0.9912): a general embedding model has
+not learned that two branches with similar names are different businesses. A short contrastive fine-tune
+puts it ahead at every $k$ (Table~\ref{tab:retrieval}). \textbf{Recall is not the bottleneck}: a perfect
+matcher on these candidates would reach macro \fhalf{} 0.99974 on val and \textbf{0.99957 on test}, so almost
+all remaining error comes from scoring. About 14.7\% of candidate pairs are positive.
