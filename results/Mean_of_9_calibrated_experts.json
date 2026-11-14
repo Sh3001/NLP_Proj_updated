@@ -1,0 +1,13 @@
+{
+ "section": "8 Fusion",
+ "method": "Mean of 9 calibrated experts",
+ "threshold": 0.3,
+ "val_f05": 0.99525,
+ "test_f05": 0.99286,
+ "test_P": 0.9941,
+ "test_R": 0.9927,
+ "test_singleton_acc": 0.9857,
+ "quick": false,
+ "test_f05_India": 0.99363,
+ "test_f05_US": 0.99204
+}

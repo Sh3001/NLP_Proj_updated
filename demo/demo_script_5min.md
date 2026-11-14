@@ -88,7 +88,7 @@ where aᵢ and bᵢ are learned per-expert affine calibration parameters, initia
 
 **Gate inputs (11 features):** script one-hot (Latin / Devanagari / Malayalam / other), source S3 flag, address-empty flag, address-has-number flag, name length / 40, address length / 80, TF-IDF cosine, e5 cosine, fused rank / K, candidates / K.
 
-**Key insight:** The gate never sees the country label. It routes pairs by script and data quality. In practice it learns a two-expert blend: LightGBM and mDeBERTa-v3 carry almost all the weight. On Latin pairs mDeBERTa gets about 40%; on Devanagari, Malayalam and other Indic scripts the weight moves to LightGBM (70-84%). The other five experts, IndicBERTv2 included, get under 2% each.
+**Key insight:** The gate never sees the country label. It routes pairs by script and data quality. In practice it learns a two-expert blend: LightGBM and mDeBERTa-v3 carry almost all the weight. On Latin pairs mDeBERTa gets about 36%; on Devanagari, Malayalam and other Indic scripts the weight moves to LightGBM (74-91%). The other seven experts, IndicBERTv2 included, get under 2% each.
 
 We compare against: mean of calibrated experts, logistic-regression stacking, MoE with a constant gate (ablation), and LightGBM stacking on the same 11+N inputs."
 
@@ -106,7 +106,7 @@ We compare against: mean of calibrated experts, logistic-regression stacking, Mo
 ### Record 2 — Devanagari / Malayalam script
 > `show(i=DEMO4[list(DEMO4)[1]])`
 
-**Say:** "Record 2 is an Indian business — the original name is in Devanagari or Malayalam. Watch the normalisation panel: anyascii romanises the script, the learned lexicon further aligns tokens to their English equivalents. On Indic-script pairs the gate shifts weight toward LightGBM's address features (about 70%), with mDeBERTa-v3 as the second expert."
+**Say:** "Record 2 is an Indian business — the original name is in Devanagari or Malayalam. Watch the normalisation panel: anyascii romanises the script, the learned lexicon further aligns tokens to their English equivalents. On Indic-script pairs the gate shifts weight toward LightGBM's address features (about 75%), with mDeBERTa-v3 as the second expert."
 
 ### Record 3 — Sibling branch / distractor
 > `show(i=DEMO4[list(DEMO4)[2]])`
@@ -133,7 +133,7 @@ We compare against: mean of calibrated experts, logistic-regression stacking, Mo
 - LoRA: 0.987 vs 0.991 for the full fine-tune, training 0.5% of the parameters in half the time.
 - IndicBERTv2: weaker than the bge cross-encoder on every main script, Indian scripts included (McNemar p < 1e-17); multilingual pretraining beat an Indic-only backbone here. The gate gives it almost no weight.
 - mDeBERTa-v3: the best single model (0.994).
-- **Gated MoE: best overall (0.9948)**, above every single matcher (+0.0008 over mDeBERTa) and above the plain mean of experts (+0.0014). But the constant-gate ablation (0.9947) and logistic-regression stacking (0.9948) are within 0.0001, so the gain comes from learned, calibrated expert weights, not from making the weights depend on the input.
+- **Gated MoE: best overall (0.9948)**, above every single matcher (+0.0008 over mDeBERTa) and above the plain mean of experts (+0.0020). But the constant-gate ablation (0.9947) and logistic-regression stacking (0.9948) are within 0.0001, so the gain comes from learned, calibrated expert weights, not from making the weights depend on the input.
 
 Two caveats: our splits are from training data, so F0.5 is optimistic compared with the leaderboard; and the small dataset is 3.5% of S1 entities, so absolute numbers don't transfer to the full model."
 

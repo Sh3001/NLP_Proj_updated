@@ -10,9 +10,8 @@ Tables: `analysis/out_script/per_script_f05.md`, `per_script_errors.md`, `rankin
 > Covers 21 matchers: 04, 05a–c, 06a–f, the six 06g Ditto ablation runs (40k pairs each; the `final`
 > 06g run is not shared yet) and the five 07 fusion models.
 >
-> The 07 rows come from a **9-expert** rerun of 07 (04, 05a, 05b, 06a–f). The headline table in
-> `final_results.md` is the committed 7-expert run (no 06a/06b). Gated MoE is 0.99481 here vs 0.99480 there;
-> only the plain mean differs noticeably (0.99286 vs 0.99339).
+> The 07 rows come from the final **9-expert** run of 07 (04, 05a, 05b, 06a–f), the same run as
+> `final_results.md`.
 
 ---
 

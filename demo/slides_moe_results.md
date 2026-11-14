@@ -73,11 +73,11 @@ This lets it generalise to unseen countries:
 ```
 Learned gate weight (mean over test pairs, moe_gate_by_script.csv)
 
-              LightGBM   mDeBERTa-v3   other 5 experts
-Latin           0.56        0.40          < 0.02 each
-Devanagari      0.71        0.26          < 0.02 each
-Malayalam       0.70        0.29          < 0.01 each
-other Indic     0.84        0.15          < 0.01 each
+              LightGBM   mDeBERTa-v3   other 7 experts
+Latin           0.60        0.36          < 0.02 each
+Devanagari      0.74        0.23          < 0.02 each
+Malayalam       0.75        0.24          < 0.01 each
+other Indic     0.91        0.09          < 0.01 each
 ```
 
 ---
@@ -110,13 +110,13 @@ other Indic     0.84        0.15          < 0.01 each
 | CE bge + MoE head | 0.9889 | 0.9914 | 0.9871 | 0.9872 | 0.9904 |
 | CE IndicBERTv2 | 0.9761 | 0.9841 | 0.9666 | 0.9727 | 0.9793 |
 | CE mDeBERTa-v3 | 0.9940 | 0.9953 | 0.9931 | 0.9926 | 0.9953 |
-| Mean of 7 experts | 0.9934 | 0.9955 | 0.9908 | 0.9922 | 0.9945 |
-| LR stacking | 0.9948 | 0.9963 | 0.9927 | 0.9929 | 0.9965 |
-| **Gated MoE** | **0.9948** | **0.9963** | **0.9930** | **0.9931** | **0.9964** |
+| Mean of 9 experts | 0.9929 | 0.9941 | 0.9927 | 0.9920 | 0.9936 |
+| LR stacking | 0.9948 | 0.9967 | 0.9920 | 0.9932 | 0.9962 |
+| **Gated MoE** | **0.9948** | **0.9961** | **0.9935** | **0.9930** | **0.9965** |
 | Constant-gate ablation | 0.9947 | 0.9963 | 0.9928 | 0.9930 | 0.9964 |
 
-*Test split of `data/small`, threshold tuned on val. Fusion rows: the committed 7-expert run of 07
-(04, 05a, 05b, 06c, 06d, 06e, 06f; `results/*.json`).*
+*Test split of `data/small`, threshold tuned on val. Fusion rows: the final 9-expert run of 07
+(04, 05a, 05b, 06a–f; `results/*.json`).*
 
 ---
 
@@ -129,7 +129,7 @@ other Indic     0.84        0.15          < 0.01 each
    every script; IndicBERTv2 is below the bge cross-encoder even on Devanagari
    and Malayalam (McNemar p < 1e-17).
 
-3. **Gated MoE beats every single matcher** (+0.0008 over mDeBERTa, +0.0014
+3. **Gated MoE beats every single matcher** (+0.0008 over mDeBERTa, +0.0020
    over the plain mean). The gate never sees the country, so it can route an
    unseen country by its script.
 

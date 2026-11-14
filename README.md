@@ -125,7 +125,7 @@ Attach them with **Add Input → Datasets**, then run `kaggle/notebooks/01 … 0
 | Notebook | Topic & Method | Kaggle Notebook Link | Test $F_{0.5}$ | Owner |
 |---|---|---|---|---|
 | `06d_ce_bge_moe_head` | MoE head inside BGE cross-encoder (top-2 of 4) | [ayush122222/06d](https://www.kaggle.com/code/ayush122222/notebook7ebbf31256) | **0.98888** | Ayush |
-| `07_moe_fusion_and_results` | Gated Mixture-of-Experts fusion & final results | [ayush122222/07_moe](https://www.kaggle.com/code/ayush122222/notebook943a8e720d) | **0.99480** | Ayush |
+| `07_moe_fusion_and_results` | Gated Mixture-of-Experts fusion & final results | [ayush122222/07_moe](https://www.kaggle.com/code/ayush122222/notebook2a4366b080) | **0.99481** | Ayush |
 
 ### Final Results Summary (`data/small`, Held-out Test Split)
 
@@ -136,14 +136,17 @@ Attach them with **Add Input → Datasets**, then run `kaggle/notebooks/01 … 0
 | **6 RNN / LSTM** | Siamese char-BiGRU | 0.98814 | 0.98197 | 0.9850 | 0.9835 | 0.98142 | 0.98247 | 0.9404 |
 | **6 RNN / LSTM** | Siamese char-BiRNN (vanilla) | 0.98374 | 0.97475 | 0.9782 | 0.9789 | 0.97646 | 0.97316 | 0.9085 |
 | **7 Transformers** | CE mDeBERTa-v3 full fine-tune (fp32) | 0.99561 | 0.99402 | 0.9953 | 0.9931 | 0.99261 | 0.99533 | 0.9866 |
+| **7 Transformers** | CE bge-reranker-base full fine-tune | 0.99338 | 0.99124 | 0.9941 | 0.9878 | 0.98935 | 0.99299 | 0.9840 |
 | **7 Transformers** | CE bge-reranker-base + MoE head | 0.99226 | **0.98888** | 0.9914 | 0.9871 | 0.98719 | 0.99044 | 0.9706 |
 | **7 Transformers** | CE bge-reranker-base LoRA ($r=16$) | 0.99142 | 0.98708 | 0.9900 | 0.9854 | 0.98566 | 0.98839 | 0.9681 |
 | **7 Transformers** | CE IndicBERTv2 full fine-tune | 0.98249 | 0.97611 | 0.9841 | 0.9666 | 0.97268 | 0.97929 | 0.9446 |
-| **8 Fusion** | **Gated Mixture of Experts** | **0.99638** | **0.99480** | **0.9963** | **0.9930** | **0.99307** | **0.99641** | **0.9933** |
-| **8 Fusion** | LightGBM stacking | 0.99608 | 0.99478 | 0.9968 | 0.9919 | 0.99346 | 0.99602 | 0.9924 |
-| **8 Fusion** | Logistic-regression stacking | 0.99632 | 0.99476 | 0.9963 | 0.9927 | 0.99288 | 0.99650 | 0.9933 |
+| **7 Transformers** | CE bge-reranker-base zero-shot | 0.94192 | 0.91674 | 0.9161 | 0.9595 | 0.92713 | 0.90712 | 0.6868 |
+| **7b Ditto** | Ditto bge DK+SU+DA-all 40k | 0.98713 | 0.98214 | 0.9856 | 0.9813 | 0.98158 | 0.98266 | 0.9379 |
+| **8 Fusion** | **Gated Mixture of Experts** | **0.99648** | **0.99481** | **0.9961** | **0.9935** | **0.99304** | **0.99645** | **0.9933** |
+| **8 Fusion** | Logistic-regression stacking | 0.99648 | 0.99477 | 0.9967 | 0.9920 | 0.99322 | 0.99620 | 0.9933 |
 | **8 Fusion** | MoE, constant gate (ablation) | 0.99642 | 0.99474 | 0.9963 | 0.9928 | 0.99299 | 0.99636 | 0.9933 |
-| **8 Fusion** | Mean of 7 calibrated experts | 0.99566 | 0.99339 | 0.9955 | 0.9908 | 0.99216 | 0.99453 | 0.9874 |
+| **8 Fusion** | LightGBM stacking | 0.99632 | 0.99470 | 0.9968 | 0.9918 | 0.99305 | 0.99622 | 0.9924 |
+| **8 Fusion** | Mean of 9 calibrated experts | 0.99525 | 0.99286 | 0.9941 | 0.9927 | 0.99204 | 0.99363 | 0.9857 |
 
 Splits use BLAKE2b hashing for every random choice. (CRC32 was used at first, but CRC hashes of the
 same id with different seeds are correlated, so two "independent" choices were not independent.)

@@ -1,14 +1,13 @@
 {
  "section": "8 Fusion",
  "method": "Logistic-regression stacking",
- "threshold": 0.34,
- "val_f05": 0.99632,
- "test_f05": 0.99476,
- "test_P": 0.9963,
- "test_R": 0.9927,
+ "threshold": 0.41,
+ "val_f05": 0.99648,
+ "test_f05": 0.99477,
+ "test_P": 0.9967,
+ "test_R": 0.992,
  "test_singleton_acc": 0.9933,
  "quick": false,
- "test_f05_India": 0.9965,
- "test_f05_US": 0.99288,
- "train_min": 0.1
+ "test_f05_India": 0.9962,
+ "test_f05_US": 0.99322
 }

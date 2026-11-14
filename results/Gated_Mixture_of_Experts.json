@@ -1,16 +1,15 @@
 {
  "section": "8 Fusion",
  "method": "Gated Mixture of Experts",
- "threshold": 0.35,
- "val_f05": 0.99638,
- "test_f05": 0.9948,
- "test_P": 0.9963,
- "test_R": 0.993,
+ "threshold": 0.3,
+ "val_f05": 0.99648,
+ "test_f05": 0.99481,
+ "test_P": 0.9961,
+ "test_R": 0.9935,
  "test_singleton_acc": 0.9933,
  "quick": false,
- "test_f05_India": 0.99641,
- "test_f05_US": 0.99307,
- "params": 450,
- "train_min": 0.16,
- "experts": 7
+ "test_f05_India": 0.99645,
+ "test_f05_US": 0.99304,
+ "train_min": 0.17,
+ "experts": 9
 }

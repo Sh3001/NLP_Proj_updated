@@ -1,3 +1,3 @@
-country,GBM,CE LoRA r=16,Siamese char-BiLSTM,Siamese char-BiGRU,CE + MoE head (top-2 of 4),CE IndicBERTv2 full fine-tune,CE mDeBERTa-v3 full fine-tune (fp32)
-India,0.655,0.004,0.011,0.006,0.004,0.004,0.316
-US,0.516,0.006,0.016,0.007,0.005,0.005,0.444
+country,CE zero-shot,CE full fine-tune,GBM,CE LoRA r=16,Siamese char-BiLSTM,Siamese char-BiGRU,CE + MoE head (top-2 of 4),CE IndicBERTv2 full fine-tune,CE mDeBERTa-v3 full fine-tune (fp32)
+India,0.002961974,0.0030854093,0.6983808,0.0029429705,0.009188477,0.0036010765,0.0029309806,0.0029242707,0.27398401
+US,0.003622286,0.0038190342,0.5546786,0.0036170562,0.0142821595,0.0046540787,0.003596898,0.003589691,0.40814015
