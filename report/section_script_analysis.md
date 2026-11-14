@@ -7,8 +7,8 @@ Figure: `analysis/out_script/per_script_f05.png`.
 Tables: `analysis/out_script/per_script_f05.md`, `per_script_errors.md`, `ranking_per_script.md`,
 `indic_vs_bge.md`. Reproduce with `python3 analysis/per_script.py <folder with prep/, test_labels/ and the er-*-output folders>`.
 
-> Covers 9 matchers: 04, 05a–c, 06a, 06b, 06c, 06e, 06f. 06d (MoE head) and the 07 fusion rows will be
-> added when their outputs are shared; the method does not change.
+> Covers 21 matchers: 04, 05a–c, 06a–f, the six 06g Ditto ablation runs (40k pairs each; the `final`
+> 06g run is not shared yet) and the five 07 fusion models.
 
 ---
 
@@ -52,11 +52,23 @@ non-Latin characters reach their subword tokenisers.
 | bge full fine-tune (06b) | 0.9912 | 0.9887 | 0.9878 | 0.9935 | 0.9915 | 0.9441 |
 | bge LoRA r=16 (06c) | 0.9871 | 0.9849 | 0.9824 | 0.9889 | 0.9862 | 0.9578 |
 | IndicBERTv2 full fine-tune (06e) | 0.9761 | 0.9712 | 0.9684 | 0.9728 | 0.9778 | 0.9715 |
-| **mDeBERTa-v3 full fine-tune (06f)** | **0.9940** | **0.9922** | **0.9901** | **0.9969** | **0.9970** | 0.9815 |
+| bge + MoE head, top-2 of 4 (06d) | 0.9889 | 0.9865 | 0.9851 | 0.9897 | 0.9884 | 0.9400 |
+| mDeBERTa-v3 full fine-tune (06f) | 0.9940 | 0.9922 | 0.9901 | **0.9969** | 0.9970 | 0.9815 |
+| Ditto, bge DK+SU+DA, 40k (06g, best run) | 0.9821 | 0.9806 | 0.9744 | 0.9811 | 0.9787 | 0.9305 |
+| Ditto, xlmr plain, 40k (06g) | 0.9788 | 0.9743 | 0.9770 | 0.9771 | 0.9732 | 0.9408 |
+| **Gated MoE fusion (07)** | **0.9948** | 0.9926 | **0.9922** | 0.9964 | 0.9975 | **0.9975** |
+| logistic-regression stacking (07) | 0.9948 | **0.9928** | 0.9909 | 0.9961 | 0.9973 | 0.9911 |
+| MoE fusion, constant gate (07) | 0.9947 | 0.9926 | 0.9918 | 0.9964 | 0.9972 | 0.9911 |
+| LightGBM stacking (07) | 0.9947 | 0.9926 | 0.9912 | **0.9969** | **0.9976** | 0.9835 |
+| mean of 9 calibrated experts (07) | 0.9929 | 0.9916 | 0.9890 | 0.9936 | 0.9946 | 0.9739 |
 
-**1. Script is not what makes a record hard.** For every trained model, **India Latin is the hardest
-of the four main groups**, and Devanagari and Malayalam score *higher* than both Latin groups for every
-fine-tuned cross-encoder. Once romanisation and fine-tuning are in place, a record written in
+The other four Ditto runs are in `analysis/out_script/per_script_f05.md`.
+
+**1. Script is not what makes a record hard.** For every trained model except two short Ditto runs,
+**India Latin is the hardest of the four main groups**. That includes all five fusion models. Devanagari
+and Malayalam score *higher* than both Latin groups for every fully fine-tuned cross-encoder (06b–06f).
+The exceptions are the 40k-pair XLM-R Ditto runs without domain-knowledge normalisation (plain, DA-all),
+which are weakest on Malayalam, by ≤ 0.004. Once romanisation and fine-tuning are in place, a record written in
 Devanagari is no harder to link than one in Latin. The difficulty lies in the records themselves:
 near-duplicate branches, missing addresses and generic names (S.4). India Latin also has the most
 blocking misses (57).
@@ -74,7 +86,17 @@ pairs. The cross-encoders see the original script and stay at 0.94–0.98. The G
 (1.000) thanks to its address and number features, but 283 records (17 unlinked) are too few for
 strong claims.
 
-**4. Errors are matching errors, not retrieval errors.** Blocking misses are identical for every model
+**4. Fusion helps most where single models are weakest.** Against the best single model (mDeBERTa-v3),
+the gated MoE fusion gains +0.002 on India Latin and +0.016 on other Indic (2 errors instead of 7), and
+ties elsewhere: +0.0005 US, −0.0006 Devanagari, +0.0005 Malayalam. Its per-pair gate adds little over a
+constant gate (0.9948 vs 0.9947 overall; the largest gap is on the 283 other-Indic records).
+
+**5. The MoE head (06d) does not specialise by script.** Its four experts get almost identical mean gate
+weights in every script (≈0.21 / 0.22 / 0.23 / 0.33 for Latin, Devanagari, Malayalam and other Indic
+alike). It scores slightly below plain fine-tuning of the same backbone in every group (e.g. India Latin
+0.9851 vs 0.9878).
+
+**6. Errors are matching errors, not retrieval errors.** Blocking misses are identical for every model
 (35 US, 57 India Latin, 2 Devanagari, 2 Malayalam, 0 other Indic) and are a small share of each model's
 errors. Ranking quality is high everywhere (pair AUC ≥ 0.998 for every fine-tuned model on every main
 group), so most remaining errors come from the decision threshold on near-duplicates.
@@ -115,7 +137,7 @@ It has the lowest recall of any fine-tuned model (R 0.967 at P 0.984).
 - *A typical IndicBERTv2 mistake* (example 4 below): it links a record to a different company at the
   **same address**, while every other model follows the identical company name.
 
-The ranking across all cross-encoders (mDeBERTa-v3 > bge full > bge LoRA > IndicBERTv2 > bge zero-shot)
+The ranking across the cross-encoders (mDeBERTa-v3 > bge full > bge + MoE head > bge LoRA > IndicBERTv2 > bge zero-shot)
 is the same in every main script group. The backbone's general pairwise ability matters more than its
 language coverage.
 
@@ -123,27 +145,28 @@ language coverage.
 
 | # | S2/S3 record | prediction | truth | models wrong | why |
 |---|---|---|---|---|---|
-| 1 | `Eye Care Associates of Hermiston Inc`, ##1139 Hartley Ave, Hermiston OR | *Eye Care Associates of Hermiston Inc.*, 1135 Hartley Avenue | no match | 9 / 9 | **Hard negative**: same name, house number off by 4. Every model reads it as a typo. |
-| 2 | `The Dent Seafood Corporation`, no address | *The Dent Seafood*, Hubbard OR | *The Dent Seafood*, Portland OR | 9 / 9 | **Sibling records without an address**: two S1 records share the name, so nothing can choose. |
-| 3 | `Tech അഗ്രോ പ്രൈവറ്റ് ലിമിറ്റഡ്` (Latin + Malayalam), no address | 7 models link a wrong S1; 06e and 06f abstain | *Tech Agro Pvt Ltd*, Calicut | 9 / 9 | **Blocking miss + mixed script**: retrieval never offered the true S1. |
-| 4 | `SREE SYSTEMS PRIVATE LIMITED`, 436/A Machamthode, Mannarkad, കേരളം | 06e: *Star Logistics Limited*, same address | *Sree Systems Private Limited*, same address | 1 / 9 (06e) | **IndicBERTv2 over-weights the address**: same building, different company. |
-| 5 | `ಸೂರ್ಯ ಇನ್‌ಫ್ರಾಸ್ಟ್ರಕ್ಚರ್ ಪ್ರೈವೇಟ್ ಲಿಮಿಟೆಡ್` (Kannada), Bangalore | 06e: no match | *Surya Infrastructure Private Limited*, Bangalore | 1 / 9 (06e) | **Transliteration**: the name matches only after Kannada → Latin. 8 models link it; IndicBERTv2's score stays below its threshold. |
+| 1 | `Eye Care Associates of Hermiston Inc`, ##1139 Hartley Ave, Hermiston OR | *Eye Care Associates of Hermiston Inc.*, 1135 Hartley Avenue | no match | 20 / 21 | **Hard negative**: same name, house number off by 4. All but one model (Ditto bge DK+SU+DA) read it as a typo. |
+| 2 | `The Dent Seafood Corporation`, no address | *The Dent Seafood*, Hubbard OR | *The Dent Seafood*, Portland OR | 21 / 21 | **Sibling records without an address**: two S1 records share the name, so nothing can choose. |
+| 3 | `Tech അഗ്രോ പ്രൈവറ്റ് ലിമിറ്റഡ്` (Latin + Malayalam), no address | 14 models link a wrong S1, 7 abstain | *Tech Agro Pvt Ltd*, Calicut | 21 / 21 | **Blocking miss + mixed script**: retrieval never offered the true S1. |
+| 4 | `SREE SYSTEMS PRIVATE LIMITED`, 436/A Machamthode, Mannarkad, കേരളം | 06e: *Star Logistics Limited*, same address | *Sree Systems Private Limited*, same address | 1 / 21 (06e) | **IndicBERTv2 over-weights the address**: same building, different company. |
+| 5 | `ಸೂರ್ಯ ಇನ್‌ಫ್ರಾಸ್ಟ್ರಕ್ಚರ್ ಪ್ರೈವೇಟ್ ಲಿಮಿಟೆಡ್` (Kannada), Bangalore | 06e: no match | *Surya Infrastructure Private Limited*, Bangalore | 5 / 21 (06e, 06d, three XLM-R Ditto runs) | **Transliteration**: the name matches only after Kannada → Latin. 16 of 21 models link it, including all fusion models. |
 
-The errors that **every** model makes (1–3) come from the data: deliberate near-duplicates, sibling
-branches with no distinguishing field, and records retrieval never paired with their S1. None of them
-is script-specific. The script-specific errors (4–5) belong to a single model.
+The errors that (almost) **every** model makes, fusion included (1–3), come from the data: deliberate
+near-duplicates, sibling branches with no distinguishing field, and records retrieval never paired with
+their S1. None of them is script-specific. The script-specific errors (4–5) belong to a few single
+models, and fusion fixes them.
 
 ## S.5 Summary
 
 - **Script is not the bottleneck.** After romanisation and fine-tuning, Devanagari and Malayalam records
-  are linked *more* accurately than Latin ones by every fine-tuned cross-encoder. India Latin is the
-  hardest group.
+  are linked *more* accurately than Latin ones by every fully fine-tuned cross-encoder. India Latin is
+  the hardest group for almost every model, fusion included.
 - **The Indic-specific backbone loses.** IndicBERTv2 is significantly worse than bge-reranker-base on
   Latin, Devanagari and Malayalam (McNemar p < 1e-17), and only ties on rare scripts. A
   relevance-pre-trained cross-encoder transfers better than Indic MLM pre-training.
 - **Romanised-only models break on rare scripts.** The char-RNNs lose ≈0.08 F0.5 on the other-Indic
   records, where romanisation and the learned lexicon fall short; models that also see the original
   script do not.
-- **Remaining errors are shared, data-driven cases** (hard negatives, address-less siblings, blocking
-  misses) that no single matcher resolves. That motivates fusing the matchers (section *Mixture of
-  Experts*).
+- **Fusion fixes model-specific errors, not shared ones.** The gated MoE fusion (0.9948) gains most on
+  India Latin and rare scripts, but the remaining errors are shared, data-driven cases (hard negatives,
+  address-less siblings, blocking misses) that no matcher, single or fused, resolves.
