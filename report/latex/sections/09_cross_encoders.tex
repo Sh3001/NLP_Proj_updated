@@ -74,25 +74,31 @@ training pairs and one seed. The ablation was run twice, with rule-parsed and wi
 
 \begin{table}[h]
 \centering\small
-\begin{tabular}{llcc}
+\begin{tabular}{llccc}
 \toprule
-run & backbone & test \fhalf, rule spans & test \fhalf, BiLSTM-CRF spans \\
+ & & rule spans & \multicolumn{2}{c}{BiLSTM-CRF spans} \\
+\cmidrule(lr){3-3}\cmidrule(lr){4-5}
+run & backbone & run 1 & run 2 & run 3 \\
 \midrule
-R1 plain           & XLM-R & 0.9788 & 0.9782 \\
-R2 +DK             & XLM-R & 0.9803 & 0.9823 \\
-R3 +SU             & XLM-R & 0.9754 & 0.9774 \\
-R4 +DA             & XLM-R & 0.9817 & 0.9761 \\
-R5 +DK+SU+DA       & XLM-R & 0.9779 & 0.9798 \\
-R6 +DK+SU+DA       & bge   & \textbf{0.9821} & \textbf{0.9828} \\
+R1 plain           & XLM-R & 0.9788 & 0.9782 & 0.9782 \\
+R2 +DK             & XLM-R & 0.9803 & 0.9823 & 0.9823 \\
+R3 +SU             & XLM-R & 0.9754 & 0.9774 & 0.9774 \\
+R4 +DA             & XLM-R & 0.9817 & 0.9761 & 0.9791 \\
+R5 +DK+SU+DA       & XLM-R & 0.9779 & 0.9798 & 0.9808 \\
+R6 +DK+SU+DA       & bge   & \textbf{0.9821} & \textbf{0.9828} & \textbf{0.9834} \\
 \bottomrule
 \end{tabular}
-\caption{Ditto ablation, 40k training pairs per run. Table~\ref{tab:main} uses the rule-span runs.}
+\caption{Ditto ablation, test \fhalf{}, 40k training pairs per run, three complete runs.
+Table~\ref{tab:main} uses run 1.}
 \label{tab:ditto}
 \end{table}
 
-R1, R3 and R4 do not use the parser, so their configurations are identical in both runs. They still
-differ by up to 0.0056 (R4), and DA even changes sign against R1 (+0.0029, then $-0.0021$). Run-to-run
-noise is therefore up to about 0.006. DK is the only optimisation that is positive in both runs, and more
-so with our parser (+0.0015 and +0.0041 over R1), but even this is within the noise. With a quarter of the training pairs, the best Ditto run
-(0.9828) stays below \nb{06b} (0.9912). The full-size Ditto run, which would make the two comparable, was not
+The runs without augmentation (R1--R3) give identical scores in runs 2 and 3, although between runs 1
+and 2 the parser-free R1 and R3 still moved by 0.0006 and 0.0020. The augmentation runs move more: R4 +DA
+scored 0.9817, 0.9761 and 0.9791, on both sides of plain, so DA has no measurable effect. DK is positive in
+all three runs (+0.0015, +0.0041, +0.0041 over R1). With our parser its gain reproduces exactly and is
+about twice that drift, so it is the one optimisation with a likely real effect, though on a single seed.
+R6 on bge is the best run every time.
+With a quarter of the training pairs, the best Ditto run
+(0.9821--0.9834) stays below \nb{06b} (0.9912). The full-size Ditto run, which would make the two comparable, was not
 completed.
