@@ -1,0 +1,69 @@
+% Author: Rishi (condensed from report/section_script_analysis.md)
+\section{Per-script analysis}
+\label{sec:script}
+
+All S1 records are in Latin script; the S2/S3 records come in several scripts. We group every test S2/S3
+record by country $\times$ script: US Latin (48,710 records), India Latin (34,342), Devanagari (7,868),
+Malayalam (10,371), and other Indic scripts (283; Gujarati, Telugu, Tamil, Kannada, Bengali, Odia,
+Gurmukhi). About half of the Devanagari and Malayalam records have the business name itself in that script.
+Macro \fhalf{} is computed per group from each model's unchanged predictions (Table~\ref{tab:script}).
+
+\begin{table}[h]
+\centering\small
+\begin{tabular}{lccccc}
+\toprule
+model & US Latin & India Latin & Devanagari & Malayalam & other Indic (283) \\
+\midrule
+LightGBM (\nb{04})            & 0.9889 & 0.9860 & 0.9924 & 0.9909 & 1.0000 \\
+Siamese BiLSTM (\nb{05a})     & 0.9830 & 0.9754 & 0.9831 & 0.9781 & 0.9048 \\
+bge zero-shot (\nb{06a})      & 0.9242 & 0.8944 & 0.8826 & 0.8857 & 0.9615 \\
+bge full FT (\nb{06b})        & 0.9887 & 0.9878 & 0.9935 & 0.9915 & 0.9441 \\
+IndicBERTv2 full FT (\nb{06e})& 0.9712 & 0.9684 & 0.9728 & 0.9778 & 0.9715 \\
+mDeBERTa-v3 full FT (\nb{06f})& 0.9922 & 0.9901 & 0.9969 & 0.9970 & 0.9815 \\
+Gated MoE (\nb{07})           & 0.9926 & 0.9922 & 0.9964 & 0.9975 & 0.9975 \\
+\bottomrule
+\end{tabular}
+\caption{Test \fhalf{} per script group (selected models; all 21 in \texttt{analysis/out\_script/}).}
+\label{tab:script}
+\end{table}
+
+\paragraph{Script is not what makes a record hard.} For almost every trained model, India Latin is the
+hardest of the four main groups. That holds for all five fusion models too, and every fully fine-tuned
+cross-encoder scores \emph{higher} on Devanagari and Malayalam than on either Latin group. Fine-tuning is
+what closes the script gap: zero-shot bge is the one model that is weakest on native scripts (0.883 on
+Devanagari), and full fine-tuning lifts the same backbone to 0.994 (+0.11). The difficulty lies in the records
+themselves: near-duplicate branches, missing addresses and generic names.
+
+\paragraph{Romanised-only models fail on rare scripts.} On the 283 other-Indic records, the char-RNNs drop to
+0.90--0.91, while the cross-encoders, which also read the original-script name, stay at 0.94--0.98. The GBM
+reaches 1.000 there. Its strongest feature, the e5 cosine, is also computed on the original-script name, but
+283 records (17 unlinked) are too few for strong claims.
+
+\paragraph{The Indic-specific backbone loses.} IndicBERTv2 and bge-reranker-base were fine-tuned with the
+same recipe. On the Indian records, bge is significantly better on Latin, Devanagari and Malayalam, in both
+\fhalf{} and threshold-free AUC. An exact McNemar test~\citep{mcnemar1947note} on the records that only one
+model gets right gives $p\le 6\times10^{-18}$; on Devanagari, for example, 139 records are right only with
+bge and 27 only with IndicBERTv2. On the 283 other-Indic records the two tie (7 vs.\ 6 records). We see two
+likely reasons:
+\begin{itemize}
+  \item bge-reranker was already pre-trained as a cross-encoder for relevance, while IndicBERTv2 is an
+        MLM-only encoder whose pairwise head starts from scratch;
+  \item the decisive tokens (names, house numbers, localities) are mostly Latin or romanised on at least
+        one side, since S1 is always Latin.
+\end{itemize}
+The ranking of the cross-encoders (mDeBERTa-v3 $>$ bge full $>$ MoE head $>$ LoRA $>$ IndicBERTv2 $>$
+zero-shot) is the same in every main script group.
+
+\paragraph{Errors are shared and data-driven.} Blocking misses are the same for every model (96 test records)
+and are a small share of each model's errors. Pair AUC is at least 0.998 for every fine-tuned model in every
+main group, so most remaining errors come from the decision on near-duplicates. Some errors are made by
+almost every model, fusion included:
+\begin{itemize}
+  \item a business whose house number differs from its S1 neighbour's by 4, which models read as a typo;
+  \item two S1 branches with the same name and an S2 record without an address, so nothing can choose
+        between them;
+  \item mixed-script records that retrieval never paired with their S1.
+\end{itemize}
+The script-specific errors, such as a Kannada name that matches only after transliteration, belong to a few
+single models, and the fusion fixes them. Against mDeBERTa-v3, the gated MoE gains most on India Latin
+(+0.002) and the other Indic records (+0.016, 2 errors instead of 7).

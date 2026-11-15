@@ -10,7 +10,7 @@
 
 No single matcher is best across all languages and data qualities:
 - **mDeBERTa-v3** is the best single matcher on every script
-- **LightGBM** (string + parsed-address features) is close behind and makes different errors
+- **LightGBM** (03's retrieval scores + string / number features) is close behind and makes different errors
 - **IndicBERTv2** loses to the multilingual bge cross-encoder even on Indian scripts (McNemar p < 1e-17)
 
 **MoE learns how much to trust each expert, per pair.**
@@ -37,7 +37,7 @@ No single matcher is best across all languages and data qualities:
 │                                                             │
 │  Expert logits: z₁…z_N (from 04–06, N = #matchers)         │
 │                                                             │
-│  Gate inputs (11 features, never sees country label):       │
+│  Gate inputs (13 features, never sees country label):       │
 │    script one-hot (4), is-S3, addr-empty, addr-has-num,     │
 │    name-len/40, addr-len/80, TF-IDF cos, e5 cos,           │
 │    RRF rank/K, #candidates/K                                │
@@ -67,8 +67,8 @@ No single matcher is best across all languages and data qualities:
 
 ### Why gating works without seeing the country label
 
-The gate sees **script** (a proxy for language) and **retrieval quality**.
-This lets it generalise to unseen countries:
+The gate sees **script** (a proxy for language) and **retrieval quality**, never the
+country. Learned weights:
 
 ```
 Learned gate weight (mean over test pairs, moe_gate_by_script.csv)
@@ -97,7 +97,7 @@ other Indic     0.91        0.09          < 0.01 each
 
 ---
 
-### Results table (fill from `final_results.csv` after Kaggle run)
+### Results table (`final_results.md`, 9-expert 07 run)
 
 | Method | Test F0.5 | Test P | Test R | US | India |
 |--------|-----------|--------|--------|----|-------|
@@ -122,16 +122,17 @@ other Indic     0.91        0.09          < 0.01 each
 
 ### Key observations
 
-1. **LightGBM is a surprisingly strong baseline** — address feature engineering
-   captures structure that raw string similarity misses.
+1. **LightGBM is a surprisingly strong baseline** (4.6 CPU min) — 83 % of its gain
+   comes from 03's retrieval scores; its own features add number mismatches between
+   branches. Parsed address fields: 0.6 % of the gain.
 
 2. **Multilingual beats Indic-only** — mDeBERTa-v3 is the best single model on
    every script; IndicBERTv2 is below the bge cross-encoder even on Devanagari
    and Malayalam (McNemar p < 1e-17).
 
 3. **Gated MoE beats every single matcher** (+0.0008 over mDeBERTa, +0.0020
-   over the plain mean). The gate never sees the country, so it can route an
-   unseen country by its script.
+   over the plain mean). The gate never sees the country label; it routes by
+   script and retrieval scores.
 
 4. **But the input-conditional gate is not what helps** — the constant-gate
    ablation (0.9947) and LR stacking (0.9948) are within 0.0001 of it. The gain
@@ -149,7 +150,7 @@ other Indic     0.91        0.09          < 0.01 each
 |---|----------|----------------|
 | 1 | Easy US Latin | True S1 at TF-IDF rank 1; all models agree. Gate: LightGBM + mDeBERTa dominate. |
 | 2 | Indic script (Devanagari/Malayalam) | Romanisation + lexicon aligns tokens. Gate shifts weight to LightGBM (~70%). Correct. |
-| 3 | Sibling branch / distractor | Same core name, different address. Address features (postcode, house-no) disambiguate. |
+| 3 | Sibling branch / distractor | Same core name, different address. House / shop numbers in only one address (LightGBM) and joint reading (cross-encoders) disambiguate. |
 | 4 | Failure case | Ambiguous / empty address confuses matchers. Even MoE fails — honest failure analysis. |
 
 ---
@@ -159,15 +160,15 @@ other Indic     0.91        0.09          < 0.01 each
 ```
 INPUT PAIR  (S2/S3 record q,  S1 candidate s)
      │
-     ├── TF-IDF char 3-gram similarity ─────────────────────► z_gbm
-     │   + parsed address fields (HOUSE, STREET, …)
-     │   + 30+ string features
+     ├── 03 retrieval scores (TF-IDF cos, e5 cos, ranks)
+     │   + edit-distance and number features
+     │   + parsed address fields (HOUSE, STREET, …)   (48 features)
      │        └── LightGBM ──────────────────────────────────► z_gbm
      │
      ├── Character sequences (ltext = "name | addr")
      │        └── Siamese BiLSTM / BiGRU / BiRNN ──────────► z_rnn_{a,b,c}
      │
-     └── ce_text = "name [| romanised] | addr"
+     └── ce_text = "name [/ romanised name] | romanised addr"
               ├── BGE reranker (zero-shot) ─────────────────► z_ce_zs
               ├── BGE full fine-tune ───────────────────────► z_ce_ft
               ├── BGE + LoRA r=16 ──────────────────────────► z_ce_lora
@@ -176,7 +177,7 @@ INPUT PAIR  (S2/S3 record q,  S1 candidate s)
               └── mDeBERTa-v3 fine-tune ───────────────────► z_mdeberta
 
    z₁…z_N (N expert logits, normalised to z-score on part B)
-   x (11 gate features from record properties + retrieval scores)
+   x (13 gate features from record properties + retrieval scores)
         │
         ▼
    GatedMoE: w(x) = softmax(MLP(x))
@@ -193,8 +194,7 @@ INPUT PAIR  (S2/S3 record q,  S1 candidate s)
 
 - **Slide 1** covers the MoE architecture; include the two architecture boxes
   and the training protocol table. The gate diagram is the key visual.
-- **Slide 2** covers results; fill the table from `final_results.csv` (attached
-  to notebook 07 output / `er-07-output` Kaggle dataset).
+- **Slide 2** covers results; the table is from `final_results.md` (9-expert 07 run).
 - **Slide 3** is optional; use as a backup slide or combine with Slide 1.
 - Use the bar chart `results_test_f05.png` from the 07 output as a figure
   in Slide 2 — it already has colour-coded sections (classical / RNN / Transformer / Fusion).

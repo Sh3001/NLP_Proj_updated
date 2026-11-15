@@ -60,10 +60,10 @@ The notebook contains a deterministic selector (`pick_demo4()`, seed 42) that ex
    - *Behavior:* TF-IDF and e5 bi-encoder both rank the true S1 at rank 1. All matchers (LightGBM, RNN, cross-encoders) agree with high confidence.
 2. **Record 2: Indic Script (Devanagari or Malayalam)**
    - *Example:* Indian business in Devanagari/Malayalam script.
-   - *Behavior:* Tests NFKC normalization, romanization, and the learned transliteration lexicon. The Gated MoE detects `script = devanagari / malayalam` and up-weights `IndicBERTv2`.
+   - *Behavior:* Tests NFKC normalization, romanization, and the learned transliteration lexicon. The Gated MoE sees `script = devanagari / malayalam` and shifts weight toward LightGBM (about 75%), with mDeBERTa-v3 second; IndicBERTv2 gets under 0.4%.
 3. **Record 3: Sibling Branch / Distractor Case**
    - *Example:* Sibling branches sharing identical core business names but located at different addresses.
-   - *Behavior:* String similarity models struggle with high token overlap; parsed address features (house number, postcode agreement) enable correct disambiguation.
+   - *Behavior:* String similarity models struggle with high token overlap; house / shop numbers present in only one address (LightGBM) and the cross-encoders' joint reading of both addresses separate the branches. (The data has no postcodes.)
 4. **Record 4: Failure Case**
    - *Example:* Business with unexpanded acronym, missing address, or blocking recall failure.
    - *Behavior:* Shows where the best individual model fails, how the MoE gating responds, and analyzes the root cause (blocking ceiling).

@@ -1,0 +1,38 @@
+% Author: Keshav
+\section{Introduction}
+\label{sec:intro}
+
+Entity resolution decides which records in different databases describe the same real-world
+entity~\citep{fellegi1969theory,christen2012data}. Our task comes from the Amazon ML Challenge 2026: Source~1
+(S1) is a reference list of businesses, and every record of Sources~2 and~3 (S2, S3) has to be linked to the
+S1 entity it describes, or to none. The data covers the US and India. The noise is varied:
+\begin{itemize}
+  \item abbreviated legal forms (\emph{private limited} / \emph{pvt ltd});
+  \item phonetic romanisations of Indian words (\emph{praivtt}, \emph{enjiniyring});
+  \item names written in Devanagari or Malayalam, while S1 is always in Latin script;
+  \item missing addresses;
+  \item near-duplicate branches of one chain that differ only in a house number.
+\end{itemize}
+About a quarter of S2/S3 records have no S1 entity at all. The metric is macro \fhalf{} per S1 entity,
+which weighs precision more than recall, so a wrong link costs more than a missed one.
+
+This makes the task a good test bed for the course material. It needs tokenization that copes with
+three scripts, string similarity and edit distance, sequence labelling (address parsing), recurrent
+networks, pre-trained transformers with full and parameter-efficient fine-tuning, and Mixture-of-Experts
+models. We built one shared pipeline (\S\ref{sec:overview}) in which every matcher scores \emph{the same}
+candidate pairs with \emph{the same} decision rule and threshold protocol, so that their results are
+directly comparable. Our contributions:
+\begin{enumerate}
+  \item A leakage-free evaluation setup: entity-level splits of the labelled data, stratified by country
+        and match count, with the official distractor density (\S\ref{sec:data}).
+  \item A tokenization study across scripts and a two-stage retriever whose candidates contain the true
+        S1 entity almost always (\fhalf{} ceiling 0.99957, \S\ref{sec:tok}).
+  \item Ten matchers from three model families (classical, recurrent, transformer), plus six Ditto runs,
+        all on identical inputs (\S\ref{sec:parsing}--\ref{sec:ce}),
+        with ablations: rule vs.\ neural address parsing, LSTM vs.\ GRU vs.\ vanilla RNN, zero-shot vs.\ full
+        vs.\ LoRA fine-tuning, Indic vs.\ multilingual backbones, and Ditto's optimisations.
+  \item A gated Mixture of Experts over nine matchers (0.9948 test \fhalf), with a constant-gate ablation
+        showing where the gain comes from (\S\ref{sec:fusion}).
+  \item A per-script error analysis of all models (\S\ref{sec:script}).
+\end{enumerate}
+Table~\ref{tab:main} in \S\ref{sec:fusion} collects all results.

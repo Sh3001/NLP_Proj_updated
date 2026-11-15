@@ -1,0 +1,40 @@
+% Author: Keshav
+\section{Related work}
+\label{sec:related}
+
+\paragraph{Record linkage.} \citet{fellegi1969theory} formalised record linkage as classifying record
+pairs from field agreement patterns. Since comparing all pairs is quadratic, practical systems first
+\emph{block}, i.e.\ generate a small candidate set per record, and then \emph{match}
+candidates~\citep{christen2012data,papadakis2020blocking}. Classical matchers compare fields with string
+similarities such as edit distance~\citep{levenshtein1966binary} and Jaro--Winkler~\citep{winkler1990string}.
+We follow the block-then-match design and use these similarities as features of a gradient-boosted
+classifier~\citep{ke2017lightgbm}.
+
+\paragraph{Deep entity matching.} DeepMatcher~\citep{mudgal2018deep} compared RNN- and attention-based
+attribute summarisers for matching. Ditto~\citep{li2020ditto} cast matching as sequence-pair classification
+with a fine-tuned pre-trained language model and added domain-knowledge injection, summarisation and data
+augmentation. We reproduce Ditto's ablation on our data. Our Siamese recurrent
+matchers follow \citet{mueller2016siamese}, with LSTM~\citep{hochreiter1997long} and GRU~\citep{cho2014learning}
+cells. We measure the vanishing-gradient problem~\citep{bengio1994learning,pascanu2013difficulty} that
+separates them from a vanilla RNN.
+
+\paragraph{Retrieval and reranking.} Our two-stage design mirrors open-domain QA: a bi-encoder retriever
+trained with in-batch negatives~\citep{karpukhin2020dense}, here multilingual-e5~\citep{wang2024multilingual},
+followed by a cross-encoder reranker~\citep{nogueira2019passage}, here bge-reranker~\citep{xiao2023cpack}.
+Sparse and dense lists are merged with reciprocal rank fusion~\citep{cormack2009reciprocal}.
+
+\paragraph{Multilingual and Indic models.} We compare multilingual encoders (mBERT~\citep{devlin2019bert},
+XLM-R~\citep{conneau2020unsupervised}, mDeBERTa-v3~\citep{he2023debertav3}) with the Indic-specific
+IndicBERTv2~\citep{doddapaneni2023towards}, and measure tokenizer fertility as in \citet{rust2021good}.
+Parameter-efficient fine-tuning uses LoRA~\citep{hu2022lora}.
+
+\paragraph{Address parsing.} Neural sequence labelling with a BiLSTM and a CRF output
+layer~\citep{lafferty2001crf,huang2015bidirectional,lample2016neural} is the standard model for address
+parsing~\citep{yassine2020leveraging}. We have no gold parses, so we train on silver labels from rules, a
+form of weak supervision~\citep{ratner2017snorkel}.
+
+\paragraph{Mixtures of experts and stacking.} A mixture of experts weights expert outputs with an
+input-dependent gate~\citep{jacobs1991adaptive}; sparse top-$k$ gates with a load-balancing loss scale this
+idea to large networks~\citep{shazeer2017outrageously,fedus2022switch}. We use both forms: a top-2 MoE head
+inside a cross-encoder, and a dense gate over whole matchers. We compare the latter with stacked
+generalisation~\citep{wolpert1992stacked}.

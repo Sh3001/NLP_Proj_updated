@@ -39,9 +39,12 @@ report threshold-free ranking quality (pair AUC and top-1 accuracy), and count e
 *wrong match* (linked to the wrong S1), *false match* (linked, but the record has no S1),
 *missed* (true S1 not linked), or *blocking miss* (true S1 never among the candidates).
 
-**What each model sees.** The char-RNNs (05a–c) and the GBM (04) read the **romanised** text only.
-The cross-encoders (06a–f) read the original name next to its romanisation (`ce_text`), so the
-non-Latin characters reach their subword tokenisers.
+**What each model sees.** The char-RNNs (05a–c) read the **romanised** text only.
+The cross-encoders (06a–f) read the original name next to its romanisation, with the address
+romanised (`ce_text`), so the non-Latin characters of the name reach their subword tokenisers. The GBM
+(04) computes its string features on the romanised text, but its strongest feature is the cosine of
+03's fine-tuned e5 bi-encoder, which embeds `ce_text`. So the GBM also sees the original-script name,
+indirectly.
 
 ## S.2 Per-script F0.5 for every model
 
@@ -86,8 +89,8 @@ drop to 0.90–0.91, and every error is a missed link. The generic romanisation 
 Bengali gives spellings far from the English S1 name (`iunibharsal sphtoy yar`,
 `emtrpraijes`), and the learned transliteration lexicon only knows words seen in ≥ 3 aligned training
 pairs. The cross-encoders see the original script and stay at 0.94–0.98. The GBM is the exception
-(1.000) thanks to its address and number features, but 283 records (17 unlinked) are too few for
-strong claims.
+(1.000). Its strongest feature, the e5 cosine from 03, is computed on the original-script name too
+(Section G.3). But 283 records (17 unlinked) are too few for strong claims.
 
 **4. Fusion helps most where single models are weakest.** Against the best single model (mDeBERTa-v3),
 the gated MoE fusion gains +0.002 on India Latin and +0.016 on other Indic (2 errors instead of 7), and

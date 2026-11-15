@@ -1,0 +1,48 @@
+% Author: Keshav
+\section{Conclusion}
+\label{sec:conclusion}
+
+We built a shared pipeline for multilingual business entity resolution and compared matchers from three
+model families on identical candidate pairs. Five results stand out.
+\begin{enumerate}
+  \item \textbf{Task fine-tuning matters more than the backbone.} It lifts the bge cross-encoder from 0.9167
+        to 0.9912, and it closes the script gap. LoRA keeps 94\% of that gain with 0.53\% of the weights.
+  \item \textbf{Retrieval carries more than it seems.} The candidate generator leaves almost no recall on the
+        table (ceiling 0.99957). Its fine-tuned e5 similarity is also the main input of the classical
+        LightGBM (83\% of the gain), which comes within 0.0004 of a fully fine-tuned cross-encoder in under
+        5 CPU minutes.
+  \item \textbf{Gated recurrence matters, and we can measure why.} LSTM and GRU beat a vanilla RNN by about
+        0.009. After training, the vanilla RNN's dependence on a character 50 positions back is $10^{-12}$.
+  \item \textbf{Language coverage is not pairwise skill.} IndicBERTv2 tokenizes Indic text best but matches
+        worst among the fine-tuned cross-encoders, even on Indic scripts.
+  \item \textbf{Fusion helps through complementarity, not routing.} The gated MoE (0.9948) beats every single
+        matcher, but a constant gate does as well. The useful structure is a blend of the classical model
+        and the best cross-encoder.
+\end{enumerate}
+
+\paragraph{Limitations.}
+\begin{itemize}
+  \item Our splits have about half the official distractor density and 3.5\% of the entities, so the
+        absolute scores are optimistic.
+  \item Most comparisons rest on a single seed, and the 06g reruns show run-to-run noise of up to 0.006.
+  \item The parser is trained and evaluated on silver labels.
+  \item We did not run the GBM without its retrieval features, so the strength of a purely string-based
+        model on this data is open.
+  \item The full-size Ditto run was not completed.
+\end{itemize}
+
+\paragraph{Contributions.}
+\begin{center}\small
+\begin{tabularx}{\linewidth}{lX}
+\toprule
+member & work \\
+\midrule
+Akshat & data splits and metric, tokenization study (\nb{01}), candidate generation (\nb{03}), shared Kaggle datasets, slide deck \\
+Keshav & address parser (\nb{02}), LightGBM baseline (\nb{04}), LoRA and mDeBERTa-v3 cross-encoders (\nb{06c}, \nb{06f}), report assembly \\
+Rishi  & Siamese RNNs (\nb{05a}--\nb{c}), IndicBERTv2 cross-encoder (\nb{06e}), per-script error analysis \\
+Shivam & bge zero-shot and full fine-tuning (\nb{06a}, \nb{06b}), Ditto (\nb{06g}), README results \\
+Ayush  & MoE head (\nb{06d}), gated MoE fusion and results (\nb{07}), live demo (\nb{08}) \\
+\bottomrule
+\end{tabularx}
+\end{center}
+Code, notebooks and the full analyses behind every section are in the project repository.

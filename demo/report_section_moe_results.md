@@ -10,10 +10,11 @@
 ### A.1 Motivation
 
 No single matcher is universally best across the two countries and three scripts
-in our dataset. LightGBM is fast and relies on explicit address features that
-work well for structured US addresses. While IndicBERTv2 provides dedicated Indic
+in our dataset. LightGBM is fast and decides from 03's retrieval scores plus explicit
+string and number mismatches (Section G.3); the cross-encoders read both records jointly.
+While IndicBERTv2 provides dedicated Indic
 subword tokenization, multilingual cross-encoders like BGE and mDeBERTa achieve higher
-precision across both Latin and Indic scripts ($p < 10^{-17}$, see Issue #8). Rather
+F0.5 across both Latin and Indic scripts ($p < 10^{-17}$, see Issue #8). Rather
 than picking one winner, we use a **Mixture of Experts (MoE)** to weight each
 matcher adaptively, based on the properties of each individual candidate pair.
 
@@ -48,12 +49,13 @@ balancing auxiliary loss is added:
 
 where fᵢ is the fraction of tokens (pairs) routed to expert i as top-1, and pᵢ
 is the mean gate probability for expert i. The total loss is BCE + λ·L_lb
-(λ = 0.01). Without this term, two experts dominate within a few training steps.
+(λ = 0.01). Without such a term, a learned top-k gate tends to collapse onto a few
+experts (Shazeer et al., 2017).
 
 **Gate analysis output (notebook 06d):** After training, the notebook reports
-the mean gate weight per expert, broken down by script and country. This reveals
-specialisation: typically one expert activates most strongly on Devanagari pairs
-and another on Latin pairs, without being explicitly supervised on script.
+the mean gate weight per expert, broken down by script and country. In our run the
+experts do **not** specialise by script: the four mean gate weights are almost the
+same in every script (≈0.21 / 0.22 / 0.23 / 0.33, Section S.5).
 
 ### A.4 Gated MoE Fusion over All Matchers (Notebook 07)
 
@@ -61,12 +63,12 @@ and another on Latin pairs, without being explicitly supervised on script.
 
 ```
 Matcher outputs (logits):  z_1, z_2, ..., z_N   (one per expert/matcher)
-Gate inputs (11 features): x  =  [script_latin, script_devanagari,
+Gate inputs (13 features): x  =  [script_latin, script_devanagari,
                                    script_malayalam, script_other,
                                    is_S3, addr_empty, addr_has_number,
                                    name_len/40, addr_len/80,
                                    tf_cos, e5_cos, rrf_rank/K, n_cand/K]
-                                   (13 features total; normalised to z-score on part B)
+                                   (z-scored on part B)
 
 Gate network:  x  →  Linear(13, 32)  →  ReLU  →  Linear(32, N)  →  softmax  →  w(x)
 
@@ -92,10 +94,10 @@ Fusion:  score = σ(Σᵢ wᵢ(x) · (aᵢ zᵢ + bᵢ) + c)
 
 #### Why Input-Conditional Gating Helps
 
-The gate sees the record's script and address quality. This lets it:
+The gate sees the record's script, its address quality and the retrieval scores. This lets it:
 
-- Route between specialized neural representations (BGE / mDeBERTa) and classical address matching (LightGBM) depending on script and address completeness.
-- Up-weight LightGBM when structured address components (house-number and postcode) are present.
+- Route between the cross-encoders (BGE / mDeBERTa) and the feature-based LightGBM depending on script and address completeness.
+- Shift weight toward LightGBM where the cross-encoders are less reliable. In our run this happens on the Indic scripts (Section B.4).
 - Down-weight models that are overconfident or underperform in a specific
   sub-domain, without manual per-country tuning.
 
@@ -107,7 +109,7 @@ The gate sees the record's script and address quality. This lets it:
 | Logistic-regression stacking | LR on the N normalised logits (global weights, no input) |
 | MoE, constant gate (ablation) | Same architecture but gate weights do not depend on input |
 | **Gated MoE** (ours) | Full input-conditional gate — our final system |
-| LightGBM stacking | LightGBM on the N logits + 11 gate features |
+| LightGBM stacking | LightGBM on the N logits + 13 gate features |
 
 #### Input / Output Flow Diagram
 
@@ -119,7 +121,7 @@ The gate sees the record's script and address quality. This lets it:
                                         │
               ┌─────────────────────────┼──────────────────────────┐
               ▼                         ▼                          ▼
-       Matcher logits            Gate features (11)         [already computed]
+       Matcher logits            Gate features (13)         [already computed]
        z₁…z_N (from             script, addr quality,       during retrieval step
        04-06 models)            retrieval scores
               │                         │
@@ -154,9 +156,9 @@ The gate sees the record's script and address quality. This lets it:
 | US | Oregon, Utah | Latin |
 | India | Kerala, Madhya Pradesh | Malayalam (Kerala), Devanagari (MP) |
 
-**Blocking ceiling** (from notebook 03): The candidate retrieval (TF-IDF + e5,
-top-5 by RRF) achieves a test pair recall that sets an upper bound on what any
-matcher can achieve on the retrieved candidates.
+**Blocking ceiling** (from notebook 03): with the candidate retrieval (TF-IDF + e5,
+top-5 by RRF), a perfect matcher would reach test macro F0.5 **0.99957**. This is
+the upper bound for every matcher on the retrieved candidates.
 
 ### B.2 Evaluation Methodology
 
@@ -180,18 +182,12 @@ matcher can achieve on the retrieved candidates.
 
 ### B.3 Individual Model Performance
 
-The table below is populated by notebook 07 (`final_results.csv`). Values are
-from the **actual run** of each notebook on Kaggle GPU T4. If a notebook has
-not yet been run, its row is absent from the table.
-
-> **Note to grader:** The table below reflects the architecture and expected
-> ordering of methods. Actual numbers come from the Kaggle output attached to
-> notebook 07. Run notebook 07 with all model outputs attached to populate
-> `final_results.md` (also in the zip output).
+The table comes from notebook 07 (`final_results.md`, the final 9-expert run). Values are
+from the final run of each notebook on Kaggle (GPU T4; CPU for 04 and 07).
 
 | Section | Method | Val F0.5 | Test F0.5 | Test P | Test R | US F0.5 | India F0.5 |
 |---------|--------|---------|---------|--------|--------|---------|-----------|
-| 5 Classical | LightGBM (string + parsed-address) | 0.99286 | 0.99081 | 0.9938 | 0.9873 | 0.98946 | 0.99205 |
+| 5 Classical | LightGBM (retrieval + string features) | 0.99286 | 0.99081 | 0.9938 | 0.9873 | 0.98946 | 0.99205 |
 | 6 RNN / LSTM | Siamese char-BiLSTM | 0.98920 | 0.98335 | 0.9863 | 0.9846 | 0.98390 | 0.98284 |
 | 6 RNN / LSTM | Siamese char-BiGRU | 0.98814 | 0.98197 | 0.9850 | 0.9835 | 0.98142 | 0.98247 |
 | 6 RNN / LSTM | Siamese char-BiRNN (vanilla) | 0.98374 | 0.97475 | 0.9782 | 0.9789 | 0.97646 | 0.97316 |
@@ -207,17 +203,18 @@ not yet been run, its row is absent from the table.
 | 8 Fusion | LightGBM stacking (same inputs) | 0.99632 | 0.99470 | 0.9968 | 0.9918 | 0.99305 | 0.99622 |
 | 8 Fusion | Mean of 9 calibrated experts | 0.99525 | 0.99286 | 0.9941 | 0.9927 | 0.99204 | 0.99363 |
 
-*Fill from `final_results.csv` after the Kaggle run.*
-
 ### B.4 Key Observations
 
-1. **LightGBM is a strong baseline.** Parsed address features (house-number
-   equality, postcode equality, city similarity) provide signal that raw string
-   similarity misses, particularly for US addresses with structured formatting.
+1. **LightGBM is a strong baseline** (0.9908, third-best single model, 4.6 CPU
+   minutes). 83 % of its gain comes from 03's retrieval scores (above all the
+   fine-tuned e5 cosine); the hand-built features add what the embeddings miss,
+   mainly numbers that appear in only one of the two addresses. The parsed address
+   fields carry 0.6 % of the gain, and the data has no postcodes (Section G.3).
 
 2. **Cross-encoders substantially outperform character-level RNNs on Indic
-   pairs.** The BiLSTM/GRU encoders see the romanised text; they cannot
-   distinguish between romanisation variants the way a subword model can.
+   pairs.** The BiLSTM/GRU encoders see only the romanised text. On the 283
+   other-Indic records they drop to 0.90–0.91, while the cross-encoders, which also
+   read the original-script name, stay at 0.94–0.98 (Section S.2).
 
 3. **Cross-encoders (BGE, mDeBERTa) outperform IndicBERTv2 even on Indian scripts**
    ($p < 10^{-17}$, see Issue #8), though IndicBERTv2 provides native Indic vocabulary coverage. The gate gives IndicBERTv2 almost no weight (under 0.4%); it blends LightGBM (60-91%) and mDeBERTa-v3 (9-36%), moving weight toward LightGBM on Indic scripts.
@@ -226,8 +223,10 @@ not yet been run, its row is absent from the table.
    ablation (MoE with a constant gate = learned fixed weights, a weighted
    ensemble) scores 0.99474 on test against 0.99481 for the gated MoE (val
    0.99642 vs 0.99648); LR stacking ties the gated MoE on val (0.99648) and
-   scores 0.99477 on test. Differences of
-   0.0001 are well inside run-to-run noise (about 0.003 in the 06g reruns). The
+   scores 0.99477 on test. In a paired bootstrap over test entities, the gain of
+   the gated MoE over mDeBERTa-v3 (+0.0008) is significant, but its gain over the
+   constant gate (+0.00007) is not, and both gaps are below the run-to-run noise
+   of 0.003–0.006 seen in the 06g reruns. The
    gain over single models comes from learned, calibrated weights over two
    complementary experts, not from routing by record properties.
 
@@ -242,7 +241,7 @@ not yet been run, its row is absent from the table.
 |---|----------|------------------|-------------------|---------------|
 | 1 | Easy US Latin | True S1 at TF-IDF rank 1 | High weight on LightGBM + mDeBERTa-v3; all models agree | Correct |
 | 2 | Indic script | True S1 retrieved (romanisation needed) | Gate shifts weight to LightGBM (~70%); lexicon-corrected tokens help | Correct |
-| 3 | Sibling branch | True S1 and sibling both in top-5 | Address features (postcode / house-number) separate them | Usually correct |
+| 3 | Sibling branch | True S1 and sibling both in top-5 | Experts separate them by house / shop numbers present in only one address (LightGBM) and by reading both addresses (cross-encoders) | Usually correct |
 | 4 | Failure case | True S1 may be in candidates | Overconfident matcher gets down-weighted; MoE may still fail | Wrong |
 
 ### B.6 Strengths and Limitations
@@ -250,13 +249,13 @@ not yet been run, its row is absent from the table.
 **Strengths:**
 - Self-contained pipeline from raw TSV to match predictions.
 - Handles three scripts without hard-coding language-specific rules.
-- Gated MoE generalises to unseen countries by routing on script.
+- The gate never sees the country label; it routes on script and retrieval scores (we did not test it on an unseen country).
 - Threshold tuned on val; test scored once — no leakage.
 
 **Limitations:**
 - `data/small` is 3.5% of the full dataset; absolute numbers do not transfer.
-- Romanisation loses some information (tone marks, geminate consonants).
-- The BiLSTM-CRF parser was trained on silver labels from the rule parser — noise propagates to the GBM features.
-- mDeBERTa-v3 in fp32 is too slow for interactive use (1.5–2.5 h per epoch on T4); we treat it as a comparison point, not a production model.
+- Romanisation loses some information (e.g. vowel length, geminate consonants).
+- The BiLSTM-CRF parser was trained on silver labels from the rule parser, so rule errors propagate to the GBM's parsed-field features (which carry only 0.6 % of its gain).
+- mDeBERTa-v3 must run in fp32 (fp16 gives NaN losses), which makes it the slowest matcher: 60.4 min of training on a T4, 9.3 GB of GPU memory.
 - Gradio share links expire when the Kaggle session ends; the fallback HTML is the durable artifact.
 
