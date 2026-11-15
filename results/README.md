@@ -24,6 +24,19 @@ Two complete runs of the same six configurations. In the first, DK used the **ru
 | R5 DK+SU+DA | 0.9809 | 0.9779 | 0.9852 | **0.9798** | 0.9861 | 0.9732 | 0.9719 |
 | R6 DK+SU+DA on bge-reranker-base | 0.9871 | 0.9821 | 0.9871 | **0.9828** | 0.9889 | 0.9753 | 0.9766 |
 
+Three complete runs, test F0.5 (the third, `ablation_bilstm_crf_run2/`, uses the BiLSTM-CRF parser again):
+
+| Run | rules | BiLSTM-CRF run 1 | BiLSTM-CRF run 2 |
+|---|---|---|---|
+| R1 plain | 0.9788 | 0.9782 | 0.9782 |
+| R2 +DK | 0.9803 | 0.9823 | 0.9823 |
+| R3 +SU | 0.9754 | 0.9774 | 0.9774 |
+| R4 +DA | 0.9817 | 0.9761 | 0.9791 |
+| R5 DK+SU+DA | 0.9779 | 0.9798 | 0.9808 |
+| R6 on bge | 0.9821 | 0.9828 | 0.9834 |
+
+R2 +DK is identical in both BiLSTM-CRF runs (0.9823), as are R1 and R3. Only the augmentation runs (R4, R5, R6) move between runs: R4 +DA was 0.9817, 0.9761, 0.9791, around the plain value (0.9782 to 0.9788), so DA has no measurable effect here. R6 on bge is best in every run (0.9821 to 0.9834).
+
 Notes for the report:
 * **Run-to-run noise is about 0.003 to 0.006.** R1 plain and R4 +DA are identical configurations in both runs, but R4
   moved from 0.9817 to 0.9761 (from +0.003 above plain to 0.006 below it). So the effect of DA (MixDA) is not

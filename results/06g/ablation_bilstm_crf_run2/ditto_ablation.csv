@@ -1,0 +1,7 @@
+method,DK,SU,DA,backbone,pairs,final,val_f05,test_f05,test_P,test_R,test_pair_f1,train_min,f05_latin,f05_devanagari,f05_malayalam,f05_other_indic
+Ditto bge DK+SU+DA-all 40k,True,True,all,bge,40000,False,0.98798,0.98344,0.9875,0.9808,0.97683,8.0,0.98622,0.98906,0.9892,0.98315
+Ditto xlmr plain 40k,False,False,-,xlmr,40000,False,0.98452,0.97824,0.9812,0.9804,0.97411,5.1,0.98254,0.98261,0.98061,0.98055
+Ditto xlmr DA-all 40k,False,False,all,xlmr,40000,False,0.98462,0.97908,0.9841,0.9767,0.97357,7.9,0.98359,0.98677,0.98366,0.98736
+Ditto xlmr SU 40k,False,True,-,xlmr,40000,False,0.98387,0.97742,0.9829,0.9744,0.97286,5.2,0.98251,0.98404,0.98071,0.98983
+Ditto xlmr DK 40k,True,False,-,xlmr,40000,False,0.98686,0.98233,0.988,0.9752,0.97533,5.2,0.98521,0.98939,0.98986,0.98569
+Ditto xlmr DK+SU+DA-all 40k,True,True,all,xlmr,40000,False,0.9854,0.98085,0.9865,0.9751,0.9729,8.0,0.98455,0.98546,0.98553,0.98485
