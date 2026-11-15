@@ -148,5 +148,15 @@ Attach them with **Add Input → Datasets**, then run `kaggle/notebooks/01 … 0
 | **8 Fusion** | LightGBM stacking | 0.99632 | 0.99470 | 0.9968 | 0.9918 | 0.99305 | 0.99622 | 0.9924 |
 | **8 Fusion** | Mean of 9 calibrated experts | 0.99525 | 0.99286 | 0.9941 | 0.9927 | 0.99204 | 0.99363 | 0.9857 |
 
+Test macro F0.5 per model, and the Mixture-of-Experts gate weight each expert gets by script:
+
+![Test F0.5 per model](results_test_f05.png)
+
+![MoE gate weights by script](moe_gates.png)
+
+The Ditto row is the first 40k-pair ablation run (rule-parsed spans). All three ablation runs, the
+BiLSTM-CRF-parser results and the notes are in [results/README.md](results/README.md). The 160k-pair `final` Ditto
+run is not in this table yet.
+
 Splits use BLAKE2b hashing for every random choice. (CRC32 was used at first, but CRC hashes of the
 same id with different seeds are correlated, so two "independent" choices were not independent.)
