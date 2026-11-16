@@ -48,4 +48,37 @@ Notes for the report:
   trained on 160k pairs against 40k here, so they are not comparable until the `final` run (160k pairs) is done.
 * `ditto_lengths.csv`: 5.8 % of pairs are cut at 96 tokens without summarisation, 3.6 % with SU; Malayalam
   22.6 % vs 12.9 %.
-* Not run yet: `operators`, `label_eff`, `final`.
+* Not run yet: `final`.
+
+## 06g augmentation operators (20k training pairs, no DK or SU, BiLSTM-CRF parser available but unused)
+
+`results/06g/operators/`. Test F0.5:
+
+| Operator | Val | **Test** |
+|---|---|---|
+| span_shuffle | 0.9794 | **0.9708** |
+| span_del | 0.9793 | **0.9702** |
+| all (random operator per pair) | 0.9788 | **0.9698** |
+| attr_shuffle | 0.9773 | **0.9672** |
+| entry_swap | 0.9752 | **0.9638** |
+| attr_del | 0.9746 | **0.9633** |
+
+The two operators that change words inside an attribute (span_shuffle, span_del) are the best; the ones that remove
+or reorder whole attributes (attr_del, entry_swap) are the worst. There is **no 20k plain run**, so these numbers
+cannot be compared with "no augmentation" directly. Plain at 10k (0.9622) and 40k (0.9782) bracket them, so none of the
+operators is clearly better than no augmentation. Single seed.
+
+## 06g label efficiency (`results/06g/label_eff/`, plot: `results/06g/label_efficiency_3points.png`)
+
+Test F0.5, BiLSTM-CRF parser. The 40k points are from the ablation (R1 and R5).
+
+| Training pairs | R1 plain | R5 DK+SU+DA | Gain |
+|---|---|---|---|
+| 2,000 | 0.9466 | 0.9592 | +0.0127 |
+| 10,000 | 0.9622 | 0.9717 | +0.0095 |
+| 40,000 | 0.9782 | 0.9808 | +0.0026 |
+
+The gain of the full Ditto configuration over plain serialization shrinks as the training set grows (+0.0127 → +0.0026),
+the paper's low-resource claim. R5 combines DK, SU and DA, and the ablation shows DA alone has no measurable effect and
+DK alone is +0.004 at 40k, so the gain at 2k and 10k is probably mostly DK, but this was not run separately. At 40k,
+R5 is the one drawn from run 3 (0.9808, run 2 was 0.9798).

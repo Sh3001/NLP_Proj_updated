@@ -102,3 +102,11 @@ R6 on bge is the best run every time.
 With a quarter of the training pairs, the best Ditto run
 (0.9821--0.9834) stays below \nb{06b} (0.9912). The full-size Ditto run, which would make the two comparable, was not
 completed.
+
+\paragraph{Label efficiency and augmentation operators.} Training the plain and the full (DK+SU+DA, BiLSTM-CRF
+spans) configuration on fewer pairs, the full recipe is ahead by 0.0127 at 2,000 pairs (0.9592 vs 0.9466), 0.0095
+at 10,000 (0.9717 vs 0.9622) and 0.0026 at 40,000 (0.9808 vs 0.9782). The gain shrinks as labels grow, as the Ditto paper
+reports. As DA alone has no measurable effect and DK alone gives +0.0041 at 40k, the early gain is probably mostly DK, but
+we did not run that split at 2k and 10k. Trained alone on 20,000 pairs, the word-level operators (span shuffle 0.9708, span
+delete 0.9702) score above the attribute-level ones (entry swap 0.9638, attribute delete 0.9633). There is no 20k plain run, so
+none of the operators can be said to beat no augmentation. All single seed.

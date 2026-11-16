@@ -1,0 +1,11 @@
+method,DK,SU,DA,backbone,pairs,final,val_f05,test_f05,test_P,test_R,test_pair_f1,train_min,f05_latin,f05_devanagari,f05_malayalam,f05_other_indic
+Ditto xlmr plain 2k,False,False,-,xlmr,2000,False,0.95375,0.94655,0.9816,0.8987,0.93342,2.5,0.9653,0.96762,0.95809,0.90722
+Ditto xlmr DK+SU+DA-all 2k,True,True,all,xlmr,2000,False,0.96458,0.95922,0.9858,0.9177,0.94369,3.9,0.97075,0.9767,0.97823,0.95153
+Ditto xlmr plain 10k,False,False,-,xlmr,10000,False,0.97194,0.96215,0.974,0.9533,0.95677,2.5,0.97177,0.97108,0.97118,0.97879
+Ditto xlmr DK+SU+DA-all 10k,True,True,all,xlmr,10000,False,0.97803,0.97169,0.9803,0.9641,0.96501,3.9,0.97821,0.97915,0.97805,0.97338
+Ditto xlmr DA-all 20k,False,False,all,xlmr,20000,False,0.97881,0.96983,0.9749,0.9711,0.9633,3.8,0.97543,0.97808,0.97365,0.98653
+Ditto xlmr DA-attr_del 20k,False,False,attr_del,xlmr,20000,False,0.97464,0.96334,0.9709,0.9621,0.95968,3.8,0.97053,0.97672,0.97185,0.98055
+Ditto xlmr DA-attr_shuffle 20k,False,False,attr_shuffle,xlmr,20000,False,0.97732,0.96719,0.9729,0.9671,0.96317,3.9,0.97381,0.97699,0.97242,0.98315
+Ditto xlmr DA-entry_swap 20k,False,False,entry_swap,xlmr,20000,False,0.97523,0.96382,0.9681,0.9698,0.95624,3.8,0.9701,0.97318,0.97208,0.97561
+Ditto xlmr DA-span_del 20k,False,False,span_del,xlmr,20000,False,0.97934,0.97023,0.9751,0.9717,0.96454,3.8,0.97593,0.97978,0.97413,0.98229
+Ditto xlmr DA-span_shuffle 20k,False,False,span_shuffle,xlmr,20000,False,0.97938,0.9708,0.9755,0.9717,0.96421,3.8,0.97702,0.97397,0.97457,0.98142

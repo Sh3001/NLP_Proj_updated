@@ -1,7 +1,7 @@
 # Slides: Transformer cross-encoders and Ditto
 ### Shivam · issues #10, #12, #20 → hand to Akshat for the deck
 
-Five slides: three on the cross-encoders, two on Ditto. Each has its content, the figure or table to use, and a line of
+Six slides: three on the cross-encoders, three on Ditto. Each has its content, the figure or table to use, and a line of
 speaker notes. Full text: `report/latex/sections/09_cross_encoders.tex`. All numbers are test macro F0.5 on `data/small`
 (threshold tuned on val, test scored once) from `final_results.csv` and `results/06g/`.
 
@@ -111,3 +111,25 @@ Test F0.5, 40k training pairs per run, three complete runs (rule parser, BiLSTM-
 
 *Notes:* Say it as a negative result: on this data, a well fine-tuned cross-encoder leaves little room for Ditto's
 tricks, except the one that uses our own parser. Single seed, so differences under about 0.003 are noise.
+
+---
+
+## SLIDE D3: Label efficiency: Ditto's tricks help most with few labels
+
+**Title:** With 2,000 training pairs the full Ditto recipe is +0.013 better
+
+Figure: `results/06g/label_efficiency_3points.png`
+
+| training pairs | plain | DK+SU+DA | gain |
+|---|---|---|---|
+| 2,000 | 0.9466 | 0.9592 | **+0.0127** |
+| 10,000 | 0.9622 | 0.9717 | +0.0095 |
+| 40,000 | 0.9782 | 0.9808 | +0.0026 |
+
+- The gain shrinks as labels grow: Ditto's low-resource claim holds on our data.
+- Which part gives it? DK alone is +0.004 at 40k and DA alone does nothing, so the early gain is probably DK (our parser),
+  but we did not run that split at 2k and 10k.
+- Augmentation operators (20k pairs, no baseline run): span-level operators (span_shuffle 0.9708, span_del 0.9702) beat
+  attribute-level ones (entry_swap 0.9638, attr_del 0.9633).
+
+*Notes:* One seed. Say "consistent with the paper", not "proven".
