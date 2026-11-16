@@ -2,7 +2,7 @@
 \section{Classical baseline: LightGBM on pair features}
 \label{sec:classical}
 
-The classical matcher is a gradient-boosted tree classifier, LightGBM~\citep{ke2017lightgbm}, on 48
+The classical matcher is a gradient-boosted tree classifier, LightGBM, on 48
 hand-built features of each candidate pair (S2/S3 record $q$, S1 candidate $s$), in six families:
 \begin{itemize}
   \item \textbf{name strings} (14): edit-distance similarities of the normalised names (Indel ratio,
@@ -42,7 +42,7 @@ a pure edit-distance model. We did not run it without the retrieval features.
 
 \paragraph{Does the parser help matching?} We ran the GBM twice, once with BiLSTM-CRF fields and once with
 rule fields. Test \fhalf{} is 0.99081 vs.\ 0.99051. A paired bootstrap over the 21,529 test
-entities~\citep{koehn2004statistical} (10,000 resamples) gives a 95\% interval for the difference of
+entities (10,000 resamples) gives a 95\% interval for the difference of
 $[-0.00006, +0.00064]$. It includes 0, so the difference is \textbf{not significant}. The runs differ on only
 273 entities (137 better with the BiLSTM-CRF, 136 with the rules). This is expected: with commas, both
 parsers give the same fields for 99.7\% of addresses, and the parsed fields carry little gain. The parser's

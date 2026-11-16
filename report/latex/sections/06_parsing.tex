@@ -24,9 +24,9 @@ cannot find component boundaries at all.
 \paragraph{Model.} Each token is represented by a word embedding (100 dimensions; 30,000 most frequent
 training tokens, digits mapped to 0) concatenated with a character BiLSTM ($2\times32$), which covers unseen
 house numbers and spelling variants. A 2-layer BiLSTM ($2\times128$) produces emission scores for the 8 tags.
-A CRF output layer~\citep{lafferty2001crf} scores whole tag sequences with learned transitions
+A CRF output layer scores whole tag sequences with learned transitions
 (\textsc{city}$\to$\textsc{state} likely, \textsc{state}$\to$\textsc{house} rare), trained by maximum
-likelihood and decoded with Viterbi~\citep{huang2015bidirectional,lample2016neural}. The model has 2.72M
+likelihood and decoded with Viterbi. The model has 2.72M
 parameters. \textbf{Training trick:} the silver labels are computed on the address with commas. Then, for
 half of the training addresses, the comma tokens are deleted from both tokens and tags, so the model must
 learn the boundaries from the words themselves. It is trained on 120,000 training addresses for 3 epochs

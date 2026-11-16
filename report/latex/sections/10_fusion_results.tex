@@ -2,7 +2,7 @@
 \section{Gated Mixture-of-Experts fusion and main results}
 \label{sec:fusion}
 
-\paragraph{Model.} The fusion treats each matcher as an expert~\citep{jacobs1991adaptive}. For a candidate
+\paragraph{Model.} The fusion treats each matcher as an expert. For a candidate
 pair with expert logits $z_1,\dots,z_N$ (z-scored on part B) and gate features $x$, it predicts
 \[
 p=\sigma\Big(\sum_{i=1}^{N} w_i(x)\,(a_i z_i+b_i)+c\Big),\qquad w(x)=\mathrm{softmax}\big(W_2\,\mathrm{ReLU}(W_1x)\big),
@@ -20,7 +20,7 @@ binary cross-entropy (Adam, learning rate $10^{-2}$, batch 2048, cosine schedule
 \nb{04}, \nb{05a}, \nb{05b} and \nb{06a}--\nb{06f}. We compare it with four alternatives:
 \begin{itemize}
   \item the mean of the calibrated experts;
-  \item logistic-regression stacking on the logits~\citep{wolpert1992stacked};
+  \item logistic-regression stacking on the logits;
   \item LightGBM stacking on the logits plus the gate features;
   \item the same MoE with a \emph{constant} gate, i.e.\ learned weights that do not depend on $x$.
 \end{itemize}

@@ -41,7 +41,7 @@ reaches 1.000 there. Its strongest feature, the e5 cosine, is also computed on t
 
 \paragraph{The Indic-specific backbone loses.} IndicBERTv2 and bge-reranker-base were fine-tuned with the
 same recipe. On the Indian records, bge is significantly better on Latin, Devanagari and Malayalam, in both
-\fhalf{} and threshold-free AUC. An exact McNemar test~\citep{mcnemar1947note} on the records that only one
+\fhalf{} and threshold-free AUC. An exact McNemar test on the records that only one
 model gets right gives $p\le 6\times10^{-18}$; on Devanagari, for example, 139 records are right only with
 bge and 27 only with IndicBERTv2. On the 283 other-Indic records the two tie (7 vs.\ 6 records). We see two
 likely reasons:

@@ -5,7 +5,7 @@
 \paragraph{Task and decision rule.} Each S2/S3 record is linked to at most one S1 entity; 26\% are linked to
 none. Every model uses the same \textbf{decision rule}: a record is assigned to its best-scoring S1 candidate
 if the score reaches a threshold $\tau$, and to no S1 otherwise. This is the mention-ranking formulation of
-coreference with a dummy antecedent~\citep{lee2017end}: each record either picks its best antecedent or
+coreference with a dummy antecedent: each record either picks its best antecedent or
 starts a new cluster.
 
 \paragraph{Metric.} For every S1 entity we compare the set of S2/S3 records predicted for it with its true

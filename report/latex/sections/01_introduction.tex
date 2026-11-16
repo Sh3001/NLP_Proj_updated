@@ -3,7 +3,7 @@
 \label{sec:intro}
 
 Entity resolution decides which records in different databases describe the same real-world
-entity~\citep{fellegi1969theory,christen2012data}. Our task comes from the Amazon ML Challenge 2026: Source~1
+entity. Our task comes from the Amazon ML Challenge 2026: Source~1
 (S1) is a reference list of businesses, and every record of Sources~2 and~3 (S2, S3) has to be linked to the
 S1 entity it describes, or to none. The data covers the US and India. The noise is varied:
 \begin{itemize}
@@ -21,18 +21,5 @@ three scripts, string similarity and edit distance, sequence labelling (address 
 networks, pre-trained transformers with full and parameter-efficient fine-tuning, and Mixture-of-Experts
 models. We built one shared pipeline (\S\ref{sec:overview}) in which every matcher scores \emph{the same}
 candidate pairs with \emph{the same} decision rule and threshold protocol, so that their results are
-directly comparable. Our contributions:
-\begin{enumerate}
-  \item A leakage-free evaluation setup: entity-level splits of the labelled data, stratified by country
-        and match count, with the official distractor density (\S\ref{sec:data}).
-  \item A tokenization study across scripts and a two-stage retriever whose candidates contain the true
-        S1 entity almost always (\fhalf{} ceiling 0.99957, \S\ref{sec:tok}).
-  \item Ten matchers from three model families (classical, recurrent, transformer), plus Ditto (ablation, augmentation-operator, label-efficiency and 160k-pair runs),
-        all on identical inputs (\S\ref{sec:parsing}--\ref{sec:ce}),
-        with ablations: rule vs.\ neural address parsing, LSTM vs.\ GRU vs.\ vanilla RNN, zero-shot vs.\ full
-        vs.\ LoRA fine-tuning, Indic vs.\ multilingual backbones, and Ditto's optimisations.
-  \item A gated Mixture of Experts over nine matchers (0.9948 test \fhalf), with a constant-gate ablation
-        showing where the gain comes from (\S\ref{sec:fusion}).
-  \item A per-script error analysis of all models (\S\ref{sec:script}).
-\end{enumerate}
+directly comparable. The sections below follow the pipeline: data and splits (\S\ref{sec:data}), tokenization and retrieval (\S\ref{sec:tok}), parsing, the classical, recurrent and transformer matchers including Ditto (\S\ref{sec:parsing}--\ref{sec:ce}), Mixture-of-Experts fusion (\S\ref{sec:fusion}) and a per-script error analysis (\S\ref{sec:script}).
 Table~\ref{tab:main} in \S\ref{sec:fusion} collects all results.

@@ -8,7 +8,7 @@ unknown words. The input is the normalised \texttt{name | address}, cut at 100 c
 of about 250 characters. A shared (Siamese) encoder embeds characters (64 dimensions), runs a bidirectional
 recurrent layer (128 units per direction), and concatenates max- and mean-pooling over time into a record
 vector $u\in\mathbb{R}^{512}$. For a record vector $u$ and a candidate vector $v$, an MLP scores
-$[u; v; |u-v|; u\odot v]$~\citep{mueller2016siamese}. Three variants differ only in the cell: LSTM
+$[u; v; |u-v|; u\odot v]$. Three variants differ only in the cell: LSTM
 (0.73M parameters), GRU (0.68M) and a vanilla Elman RNN (0.58M). They are trained with binary cross-entropy
 on part-A candidate pairs, whose negatives are the hard ones retrieved by blocking: 3 epochs of 600k sampled
 pairs, Adam, gradient clipping at norm 1.0.
@@ -45,7 +45,7 @@ $k=0$, measured after training on 256 full-length training records.}
 the highest training loss at every epoch (0.044 vs.\ 0.029 for the LSTM after 3 epochs) and the largest
 share of clipped steps (2.1\% in epoch 1). Figure~\ref{fig:rnngrad} measures its memory directly. For
 $h_t=\tanh(Wh_{t-1}+Ux_t)$, the Jacobian $\partial h_T/\partial h_t=\prod_{s=t+1}^{T}\mathrm{diag}(1-h_s^2)\,W$
-is a product of $T-t$ factors, and it shrinks geometrically~\citep{bengio1994learning,pascanu2013difficulty}:
+is a product of $T-t$ factors, and it shrinks geometrically:
 by about 10$\times$ every 4 characters, reaching $10^{-12}$ at $k=50$. The LSTM and GRU carry state through
 an additive, gated path ($\partial c_t/\partial c_{t-1}=\mathrm{diag}(f_t)$ for the LSTM), and after training
 their gradient stays roughly flat over 100 characters ($2.0\times10^{-2}$ and $6.1\times10^{-2}$ at $k=50$).

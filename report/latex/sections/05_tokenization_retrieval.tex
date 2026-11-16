@@ -4,7 +4,7 @@
 
 \subsection{How tokenizers split each script}
 
-We measured the \emph{fertility}~\citep{rust2021good} of four multilingual tokenizers, i.e.\ subword tokens per
+We measured the \emph{fertility} of four multilingual tokenizers, i.e.\ subword tokens per
 whitespace word, on val records grouped by country and script, and again on the Devanagari and
 Malayalam records after romanisation (Table~\ref{tab:fertility}).
 
@@ -61,7 +61,7 @@ The \textbf{transliteration lexicon} is learned from the training links. For eac
 romanised non-Latin name has as many words as its S1 name, the words are aligned by position. A romanised
 word becomes an entry if it was aligned with the same English word at least 3 times and in at least 60\% of
 its occurrences (\emph{praivtt}$\to$\emph{private}, \emph{knstrksns}$\to$\emph{constructions}). This is a
-noisy-channel view~\citep{kernighan1990spelling}: a record is an S1 name transliterated to Latin letters,
+noisy-channel view: a record is an S1 name transliterated to Latin letters,
 then spelled phonetically. Romanisation inverts the first step, and the lexicon inverts the most common
 errors of the second. On non-Latin records, the lexicon matters more than the tokenizer: it raises R@1 of
 character 3-grams from 0.977 to 0.995, and with it all analyzers end within 0.004 of each other. Character
@@ -74,11 +74,11 @@ about $10^9$ pairs. Blocking keeps the 5 most likely S1 entities per record, and
 same 507,870 test pairs. We search only within the record's country, with three retrievers:
 \begin{itemize}
   \item TF-IDF over character 3-grams of the normalised text;
-  \item multilingual-e5-small~\citep{wang2024multilingual} (118M parameters), zero-shot;
+  \item multilingual-e5-small (118M parameters), zero-shot;
   \item the same model fine-tuned for 3.5 minutes on 100k linked training pairs (part A), with a symmetric
-        in-batch contrastive loss as in DPR~\citep{karpukhin2020dense}.
+        in-batch contrastive loss as in DPR.
 \end{itemize}
-The TF-IDF and fine-tuned e5 lists are merged with reciprocal rank fusion~\citep{cormack2009reciprocal},
+The TF-IDF and fine-tuned e5 lists are merged with reciprocal rank fusion,
 score $\sum 1/(60+\text{rank})$, and the top 5 are kept.
 
 \begin{table}[h]

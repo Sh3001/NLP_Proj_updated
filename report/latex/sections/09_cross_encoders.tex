@@ -7,7 +7,7 @@
 
 \paragraph{Setup.} A cross-encoder reads the pair as one sequence, \texttt{[CLS]} $q$ \texttt{[SEP]} $s$, with both
 records as \texttt{ce\_text} (original name, its romanisation, romanised address), and outputs a match
-logit from the \texttt{[CLS]} vector~\citep{nogueira2019passage}. Every trained cross-encoder uses the same
+logit from the \texttt{[CLS]} vector. Every trained cross-encoder uses the same
 recipe: one pass over 160,000 part-A candidate pairs (5,000 steps, batch 32, maximum length 96), binary
 cross-entropy, and mixed precision (fp16 autocast) on one T4 GPU. Only the backbone, the learning rate and the
 trained parameters change (Table~\ref{tab:ce}).
@@ -27,7 +27,7 @@ trained parameters change (Table~\ref{tab:ce}).
 \nb{06f} & mDeBERTa-v3-base, full, fp32      & 279M (100\%)    & \textbf{0.99402} & 0.9953 & 0.9931 & 60.4 & 9.31 GB \\
 \bottomrule
 \end{tabular}}
-\caption{Cross-encoders on the test split. \nb{06a}--\nb{06d} share the backbone~\citep{xiao2023cpack}.}
+\caption{Cross-encoders on the test split. \nb{06a}--\nb{06d} share the backbone.}
 \label{tab:ce}
 \end{table}
 
@@ -35,7 +35,7 @@ trained parameters change (Table~\ref{tab:ce}).
 precision, and only 0.687 accuracy on singletons, because it cannot tell a business from its near-duplicate
 branches. Full fine-tuning adds \textbf{+0.0745} test \fhalf{} (0.9912), and singleton accuracy rises to 0.984.
 
-\paragraph{LoRA.} LoRA~\citep{hu2022lora} freezes the backbone and trains rank-16 adapters on the query, key
+\paragraph{LoRA.} LoRA freezes the backbone and trains rank-16 adapters on the query, key
 and value projections of every layer (0.88M weights) plus the classification head (0.59M). With 0.53\% of the
 weights it keeps \textbf{94\% of the fine-tuning gain} (0.98708). The 0.0042 gap to full fine-tuning is
 consistent: full fine-tuning is ahead in every script group with enough records. LoRA needs 2.4$\times$ less
@@ -53,14 +53,14 @@ second moments underflow. The loss was NaN from the first logged step, and the m
 
 \paragraph{MoE head (\nb{06d}).} The single classification head is replaced by four expert MLPs over the
 \texttt{[CLS]} vector. A linear gate picks the top 2 per pair, with a Switch-style load-balancing
-loss~\citep{shazeer2017outrageously,fedus2022switch} ($\lambda=0.01$). It scores 0.9889, slightly below plain
+loss ($\lambda=0.01$). It scores 0.9889, slightly below plain
 fine-tuning of the same backbone. Its experts do not specialise by script: their mean gate weights are almost
 the same in every script ($\approx$0.21 / 0.22 / 0.23 / 0.33).
 
 \paragraph{IndicBERTv2 (\nb{06e})} is the weakest fine-tuned cross-encoder (0.9761), even on Indic scripts;
 \S\ref{sec:script} compares it with bge.
 
-\paragraph{Ditto (\nb{06g}).} We reproduce Ditto~\citep{li2020ditto}:
+\paragraph{Ditto (\nb{06g}).} We reproduce Ditto:
 \begin{itemize}
   \item records are serialised with attribute markers (\texttt{[COL] name [VAL] \dots});
   \item \textbf{DK} (domain knowledge) adds typed address spans from our parser (\S\ref{sec:parsing}) and
