@@ -19,30 +19,3 @@ model families on identical candidate pairs. Five results stand out.
         matcher, but a constant gate does as well. The useful structure is a blend of the classical model
         and the best cross-encoder.
 \end{enumerate}
-
-\paragraph{Limitations.}
-\begin{itemize}
-  \item Our splits have about half the official distractor density and 3.5\% of the entities, so the
-        absolute scores are optimistic.
-  \item Most comparisons rest on a single seed, and the 06g reruns show run-to-run noise of up to 0.006.
-  \item The parser is trained and evaluated on silver labels.
-  \item We did not run the GBM without its retrieval features, so the strength of a purely string-based
-        model on this data is open.
-  \item The 160k-pair Ditto run used the XLM-R backbone (0.9876); a bge-based one, the best at 40k, was not run.
-\end{itemize}
-
-\paragraph{Who did what.}
-\begin{center}\small
-\begin{tabularx}{\linewidth}{lX}
-\toprule
-member & work \\
-\midrule
-Akshat & data splits and metric, tokenization study (\nb{01}), candidate generation (\nb{03}), shared Kaggle datasets, slide deck \\
-Keshav & address parser (\nb{02}), LightGBM baseline (\nb{04}), LoRA and mDeBERTa-v3 cross-encoders (\nb{06c}, \nb{06f}), report assembly \\
-Rishi  & Siamese RNNs (\nb{05a}--\nb{c}), IndicBERTv2 cross-encoder (\nb{06e}), per-script error analysis \\
-Shivam & bge zero-shot and full fine-tuning (\nb{06a}, \nb{06b}), Ditto (\nb{06g}), README results \\
-Ayush  & MoE head (\nb{06d}), gated MoE fusion and results (\nb{07}), live demo (\nb{08}) \\
-\bottomrule
-\end{tabularx}
-\end{center}
-Code, notebooks and the full analyses behind every section are in the project repository.
