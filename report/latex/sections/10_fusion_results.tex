@@ -40,11 +40,12 @@ binary cross-entropy (Adam, learning rate $10^{-2}$, batch 2048, cosine schedule
  & Siamese char-BiGRU (\nb{05b})        & 0.98814 & 0.98197 & 0.9850 & 0.9835 & 0.98142 & 0.98247 & 0.9404 & 13.1 \\
  & Siamese char-BiRNN (\nb{05c})        & 0.98374 & 0.97475 & 0.9782 & 0.9789 & 0.97646 & 0.97316 & 0.9085 & 11.9 \\
 \midrule
-\multirow{7}{*}{transformer}
+\multirow{8}{*}{transformer}
  & mDeBERTa-v3 full FT, fp32 (\nb{06f}) & 0.99561 & \textbf{0.99402} & 0.9953 & 0.9931 & 0.99261 & 0.99533 & 0.9866 & 60.4 \\
  & bge full FT (\nb{06b})               & 0.99338 & 0.99124 & 0.9941 & 0.9878 & 0.98935 & 0.99299 & 0.9840 & 19.4 \\
  & bge + MoE head (\nb{06d})            & 0.99226 & 0.98888 & 0.9914 & 0.9871 & 0.98719 & 0.99044 & 0.9706 & 20.0 \\
  & bge LoRA $r{=}16$ (\nb{06c})         & 0.99142 & 0.98708 & 0.9900 & 0.9854 & 0.98566 & 0.98839 & 0.9681 & 10.1 \\
+ & Ditto final, XLM-R DK+SU+DA, 160k (\nb{06g}) & 0.98998 & 0.98758 & 0.9923 & 0.9805 & 0.98822 & 0.98699 & 0.9757 & 29.3 \\
  & Ditto, bge DK+SU+DA, 40k (\nb{06g})  & 0.98713 & 0.98214 & 0.9856 & 0.9813 & 0.98158 & 0.98266 & 0.9379 & 7.5 \\
  & IndicBERTv2 full FT (\nb{06e})       & 0.98249 & 0.97611 & 0.9841 & 0.9666 & 0.97268 & 0.97929 & 0.9446 & 19.3 \\
  & bge zero-shot (\nb{06a})             & 0.94192 & 0.91674 & 0.9161 & 0.9595 & 0.92713 & 0.90712 & 0.6868 & 0 \\
@@ -61,7 +62,7 @@ binary cross-entropy (Adam, learning rate $10^{-2}$, batch 2048, cosine schedule
 \end{tabular}}
 \caption{Main results. Macro \fhalf{} on val and test, test precision and recall, test \fhalf{} per
 country, singleton accuracy and training minutes. Thresholds are tuned on val, and test is scored once.
-The other Ditto runs are in Table~\ref{tab:ditto}.}
+Ditto rows were run after the fusion experts were fixed, so the gated MoE does not include them. The other Ditto runs are in Table~\ref{tab:ditto}.}
 \label{tab:main}
 \end{table}
 
