@@ -908,7 +908,13 @@ CSS = """
 .er h3{margin:14px 0 6px;font-size:16px;color:#1f2328} .er h4{margin:10px 0 4px;font-size:14px;color:#1f2328}
 .er table{border-collapse:collapse;margin:6px 0 12px;font-size:13px}
 .er th,.er td{border:1px solid #d0d7de;padding:4px 8px;text-align:left;vertical-align:top;color:#1f2328}
-.er th{background:#f6f8fa}
+.er th{background:#212529;color:#fff;border-color:#212529}
+.er tr:nth-child(even) td{background:#f1f3f5}
+.er.s0{background:#f1f3f5;border:2px solid #495057} .er.s1{background:#e7f5ff;border:2px solid #1971c2}
+.er.s2{background:#f8f0fc;border:2px solid #9c36b5} .er.s3{background:#fff4e6;border:2px solid #e67700}
+.er.s4{background:#fff5f5;border:2px solid #c92a2a} .er.s5{background:#ebfbee;border:2px solid #2b8a3e}
+.er.s1 th{background:#1971c2} .er.s2 th{background:#9c36b5} .er.s3 th{background:#e67700} .er.s4 th{background:#c92a2a} .er.s5 th{background:#2b8a3e}
+.er td{background:#fff}
 .er .tok{display:inline-block;margin:2px;padding:1px 6px;border-radius:4px;background:#eef1f4;border:1px solid #d0d7de;
          font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px;color:#1f2328}
 .er .unk{background:#ffb4b4;border-color:#c92a2a;color:#5f0000;font-weight:600}
@@ -919,7 +925,7 @@ CSS = """
 .er .bar{display:inline-block;height:11px;background:#1971c2;vertical-align:middle;border-radius:2px}
 .er .pick{outline:2px solid #1b1b1b;font-weight:700}
 .er .legend span{margin-right:10px;white-space:nowrap}
-.er .banner{font-size:15px;padding:8px 10px;border-radius:6px;background:#f6f8fa;border:1px solid #d0d7de}
+.er .banner{font-size:15px;padding:8px 10px;border-radius:6px;background:#fff;border:2px solid #1b1b1b}
 """
 TAG_COL = {'HOUSE': '#ffa94d', 'STREET': '#63e6be', 'LOCALITY': '#74c0fc', 'LANDMARK': '#da77f2', 'CITY': '#69db7c',
            'STATE': '#ffe066', 'POSTCODE': '#ff8787', 'SEP': '#dee2e6'}
@@ -1125,7 +1131,8 @@ def final_html(R):
 
 def render(R):
     top = box(header(R) + final_html(R) + f'<p class="muted">pipeline time {R["sec"]:.2f} s on {DEVICE}</p>')
-    return [top, panel_tokens(R), panel_parse(R), panel_retrieve(R), panel_scores(R), panel_fusion(R)]
+    out = [top, panel_tokens(R), panel_parse(R), panel_retrieve(R), panel_scores(R), panel_fusion(R)]
+    return [x.replace('<div class="er">', f'<div class="er s{k}">', 1) for k, x in enumerate(out)]   # each step has its own tint
 
 def safe_render(**kw):
     try: return render(run(**kw))
