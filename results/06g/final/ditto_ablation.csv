@@ -1,0 +1,2 @@
+method,DK,SU,DA,backbone,pairs,final,val_f05,test_f05,test_P,test_R,test_pair_f1,train_min,f05_latin,f05_devanagari,f05_malayalam,f05_other_indic
+Ditto final xlmr DK+SU+DA-all 160k,True,True,all,xlmr,160000,True,0.98998,0.98758,0.9923,0.9805,0.98184,29.3,0.98945,0.99293,0.99305,0.98653

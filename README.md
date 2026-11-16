@@ -141,6 +141,7 @@ Attach them with **Add Input → Datasets**, then run `kaggle/notebooks/01 … 0
 | **7 Transformers** | CE bge-reranker-base LoRA ($r=16$) | 0.99142 | 0.98708 | 0.9900 | 0.9854 | 0.98566 | 0.98839 | 0.9681 |
 | **7 Transformers** | CE IndicBERTv2 full fine-tune | 0.98249 | 0.97611 | 0.9841 | 0.9666 | 0.97268 | 0.97929 | 0.9446 |
 | **7 Transformers** | CE bge-reranker-base zero-shot | 0.94192 | 0.91674 | 0.9161 | 0.9595 | 0.92713 | 0.90712 | 0.6868 |
+| **7 Transformers** | Ditto final xlmr DK+SU+DA, 160k pairs | 0.98998 | 0.98758 | 0.9923 | 0.9805 | 0.98822 | 0.98699 | 0.9757 |
 | **7b Ditto** | Ditto bge DK+SU+DA-all 40k | 0.98713 | 0.98214 | 0.9856 | 0.9813 | 0.98158 | 0.98266 | 0.9379 |
 | **8 Fusion** | **Gated Mixture of Experts** | **0.99648** | **0.99481** | **0.9961** | **0.9935** | **0.99304** | **0.99645** | **0.9933** |
 | **8 Fusion** | Logistic-regression stacking | 0.99648 | 0.99477 | 0.9967 | 0.9920 | 0.99322 | 0.99620 | 0.9933 |
@@ -154,9 +155,9 @@ Test macro F0.5 per model, and the Mixture-of-Experts gate weight each expert ge
 
 ![MoE gate weights by script](moe_gates.png)
 
-The Ditto row is the first 40k-pair ablation run (rule-parsed spans). All three ablation runs, the
-BiLSTM-CRF-parser results and the notes are in [results/README.md](results/README.md). The 160k-pair `final` Ditto
-run is not in this table yet.
+The Ditto `final` row (160k pairs, BiLSTM-CRF spans) is from `06g`; the `7b` row is the first 40k-pair ablation run
+(rule-parsed spans). All ablation runs, operators, label efficiency and notes are in [results/README.md](results/README.md).
+The fusion rows above were computed before Ditto `final` existed, so they do not include it yet.
 
 Splits use BLAKE2b hashing for every random choice. (CRC32 was used at first, but CRC hashes of the
 same id with different seeds are correlated, so two "independent" choices were not independent.)

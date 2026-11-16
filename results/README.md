@@ -48,7 +48,7 @@ Notes for the report:
   trained on 160k pairs against 40k here, so they are not comparable until the `final` run (160k pairs) is done.
 * `ditto_lengths.csv`: 5.8 % of pairs are cut at 96 tokens without summarisation, 3.6 % with SU; Malayalam
   22.6 % vs 12.9 %.
-* Not run yet: `final`.
+* `final` (160k pairs) is in the next section.
 
 ## 06g augmentation operators (20k training pairs, no DK or SU, BiLSTM-CRF parser available but unused)
 
@@ -82,3 +82,14 @@ The gain of the full Ditto configuration over plain serialization shrinks as the
 the paper's low-resource claim. R5 combines DK, SU and DA, and the ablation shows DA alone has no measurable effect and
 DK alone is +0.004 at 40k, so the gain at 2k and 10k is probably mostly DK, but this was not run separately. At 40k,
 R5 is the one drawn from run 3 (0.9808, run 2 was 0.9798).
+
+## 06g final (`results/06g/final/`): DK+SU+DA on xlm-roberta-base, 160k pairs, BiLSTM-CRF spans
+
+| Val F0.5 | **Test F0.5** | P | R | Pair F1 | US | India | Latin | Devanagari | Malayalam | Train min |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 0.9900 | **0.9876** | 0.9923 | 0.9805 | 0.9818 | 0.9882 | 0.9870 | 0.9895 | 0.9929 | 0.9931 | 29.3 |
+
+* 0.0036 below 06b (0.9912, plain text, bge, the same 160k pairs). From 40k to 160k pairs the same configuration gains 0.0068 (0.9808 → 0.9876).
+* It is strongest on Devanagari and Malayalam records, weakest on Latin.
+* The final run took the xlm-roberta configuration (R5), although R6 on bge was higher on val in every ablation run. A 160k bge Ditto run was not made.
+* Weights and scores are in the Kaggle output; 07 and 08 need it attached to include Ditto.

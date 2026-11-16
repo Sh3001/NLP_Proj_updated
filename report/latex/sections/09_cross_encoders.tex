@@ -100,8 +100,13 @@ all three runs (+0.0015, +0.0041, +0.0041 over R1). With our parser its gain rep
 about twice that drift, so it is the one optimisation with a likely real effect, though on a single seed.
 R6 on bge is the best run every time.
 With a quarter of the training pairs, the best Ditto run
-(0.9821--0.9834) stays below \nb{06b} (0.9912). The full-size Ditto run, which would make the two comparable, was not
-completed.
+(0.9821--0.9834) stays below \nb{06b} (0.9912). The full-size run (DK+SU+DA on xlm-roberta-base, BiLSTM-CRF spans, the
+same 160,000 pairs as \nb{06b}) scores \textbf{0.9876} test \fhalf{} (val 0.9900, P 0.9923, R 0.9805, 29.3 min), 0.0036
+below \nb{06b}. Going from 40k to 160k pairs adds 0.0068 to the same configuration (0.9808). Per script it scores
+0.9894 (Latin), 0.9929 (Devanagari) and 0.9931 (Malayalam), so it is weakest on the Latin records. At equal training
+data, Ditto's three optimisations on an XLM-R backbone do not beat plain fine-tuning of the bge reranker, and the
+backbone seems to matter more than the optimisations. The final run took the XLM-R configuration (R5), although R6 on
+bge was higher on val in every ablation run; we did not rerun it with bge, so a 160k bge Ditto run is open.
 
 \paragraph{Label efficiency and augmentation operators.} Training the plain and the full (DK+SU+DA, BiLSTM-CRF
 spans) configuration on fewer pairs, the full recipe is ahead by 0.0127 at 2,000 pairs (0.9592 vs 0.9466), 0.0095

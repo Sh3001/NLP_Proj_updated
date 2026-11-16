@@ -107,7 +107,7 @@ Test F0.5, 40k training pairs per run, three complete runs (rule parser, BiLSTM-
 - **DA: no measurable effect** (0.9817, 0.9761, 0.9791 on the same configuration, around plain). **SU:** slightly negative.
 - **The backbone matters more than the optimisations:** bge-reranker start (R6) is best every time.
 - With a quarter of the data, Ditto (0.9821 to 0.9834) stays below the plain 06b fine-tune (0.9912). The 160k-pair
-  `final` run, which makes them comparable: **[to fill in: test F0.5 = ____ ]**.
+  160k-pair `final` run (DK+SU+DA, XLM-R, same data as 06b): **0.9876**, still 0.0036 below 06b (0.9912).
 
 *Notes:* Say it as a negative result: on this data, a well fine-tuned cross-encoder leaves little room for Ditto's
 tricks, except the one that uses our own parser. Single seed, so differences under about 0.003 are noise.
