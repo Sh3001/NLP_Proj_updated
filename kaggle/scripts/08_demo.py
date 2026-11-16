@@ -911,14 +911,19 @@ CSS = """
 .er th{background:#f6f8fa}
 .er .tok{display:inline-block;margin:2px;padding:1px 6px;border-radius:4px;background:#eef1f4;border:1px solid #d0d7de;
          font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px;color:#1f2328}
-.er .unk{background:#ffd8d8;border-color:#e5534b} .er .cont{background:#e6f0ff;border-color:#9ec5fe}
-.er .chg{background:#fff1b8;border-color:#d4a72c} .er .oov{color:#8c959f;text-decoration:line-through}
-.er .muted{color:#57606a;font-size:12px} .er .ok{color:#1a7f37;font-weight:600} .er .bad{color:#cf222e;font-weight:600}
-.er .bar{display:inline-block;height:11px;background:#54A24B;vertical-align:middle;border-radius:2px}
+.er .unk{background:#ffb4b4;border-color:#c92a2a;color:#5f0000;font-weight:600}
+.er .cont{background:#a5d8ff;border-color:#1971c2;color:#0b3d6b}
+.er .chg{background:#ffe066;border-color:#e67700;color:#5c3b00;font-weight:600}
+.er .oov{color:#868e96;text-decoration:line-through}
+.er .muted{color:#495057;font-size:12px} .er .ok{color:#0b6e2e;font-weight:700} .er .bad{color:#b02a37;font-weight:700}
+.er .bar{display:inline-block;height:11px;background:#1971c2;vertical-align:middle;border-radius:2px}
+.er .pick{outline:2px solid #1b1b1b;font-weight:700}
+.er .legend span{margin-right:10px;white-space:nowrap}
 .er .banner{font-size:15px;padding:8px 10px;border-radius:6px;background:#f6f8fa;border:1px solid #d0d7de}
 """
-TAG_COL = {'HOUSE': '#ffd8a8', 'STREET': '#c3fae8', 'LOCALITY': '#d0ebff', 'LANDMARK': '#eebefa', 'CITY': '#b2f2bb',
-           'STATE': '#ffec99', 'POSTCODE': '#ffc9c9', 'SEP': '#e9ecef'}
+TAG_COL = {'HOUSE': '#ffa94d', 'STREET': '#63e6be', 'LOCALITY': '#74c0fc', 'LANDMARK': '#da77f2', 'CITY': '#69db7c',
+           'STATE': '#ffe066', 'POSTCODE': '#ff8787', 'SEP': '#dee2e6'}
+STEP_COL = ['#495057', '#1971c2', '#9c36b5', '#e67700', '#c92a2a', '#2b8a3e']     # one colour per step of the demo
 def esc(x): return _html.escape(str(x))
 def chip(t, cls='', style='', title=''): return f'<span class="tok {cls}" style="{style}" title="{esc(title)}">{esc(t)}</span>'
 def box(body): return f'<div class="er">{body}</div>'
@@ -926,9 +931,12 @@ def tbl(head, rows):
     return ('<table><tr>' + ''.join(f'<th>{h}</th>' for h in head) + '</tr>'
             + ''.join('<tr>' + ''.join(f'<td>{c}</td>' for c in r) + '</tr>' for r in rows) + '</table>')
 def bar(v, w=120): return f'<span class="bar" style="width:{max(1, int(w * float(v)))}px"></span> {float(v):.2f}'
+def _pcol(p):                                    # red (no match) -> amber (unsure) -> green (match)
+    p = float(p)
+    return '#ff8787' if p < 0.2 else '#ffd43b' if p < 0.5 else '#a9e34b' if p < 0.8 else '#37b24d'
 def pcell(p, picked=False):
-    a = 0.12 + 0.6 * float(p)
-    return f'<span style="background:rgba(84,162,75,{a:.2f});padding:1px 6px;border-radius:3px">{float(p):.3f}{" ★" if picked else ""}</span>'
+    return (f'<span class="{"pick" if picked else ""}" style="background:{_pcol(p)};color:#1b1b1b;padding:1px 7px;border-radius:3px">'
+            f'{float(p):.3f}{" ★" if picked else ""}</span>')
 def s1_label(ix): return f'<b>{esc(REC.name.values[ix])}</b><br><span class="muted">{esc(REC.addr.values[ix])} · {esc(REC.id.values[ix])}</span>'
 def truth_mark(R, ix): return ' <span class="ok">✓ true S1</span>' if R['known'] and REC.id.values[ix] == R['truth'] else ''
 
@@ -1166,7 +1174,8 @@ def show(label=None, i=None, typed=None):
     if label is not None: i = EXAMPLES[label]
     parts = safe_render(i=i, typed=typed)
     titles = ['', '1 · Normalise + tokenize', '2 · Parse the address', '3 · Retrieve candidates', '4 · Score (every matcher)', '5 · Fuse (MoE) + decide']
-    display(HTML('<style>' + CSS + '</style>' + ''.join((f'<h2>{t}</h2>' if t else '') + p for t, p in zip(titles, parts))))
+    display(HTML('<style>' + CSS + '</style>' + ''.join((f'<h2 style="border-left:6px solid {STEP_COL[k]};padding-left:10px;color:{STEP_COL[k]}">{t}</h2>' if t else '')
+                                                  + p for k, (t, p) in enumerate(zip(titles, parts)))))
 
 show(list(EXAMPLES)[0])
 # show(typed=('Sri Lakshmi Traders', 'Shop No 4, MG Road, Kochi, Kerala 682035', 'India', 'S2'))
@@ -1233,7 +1242,7 @@ _status_html = ('<table style="border-collapse:collapse;font-size:13px">'
                + _status_rows + '</table>')
 
 _nav = ''.join(
-    f'<a href="#rec{i+1}" style="padding:7px 14px;background:#54A24B;color:#fff;'
+    f'<a href="#rec{i+1}" style="padding:7px 14px;background:#1971c2;color:#fff;'
     f'border-radius:5px;text-decoration:none;font-weight:600">'
     f'Record {i+1}: {_html2.escape(list(DEMO4)[i].split(":")[0])}</a> '
     for i in range(len(DEMO4))
@@ -1251,10 +1260,10 @@ for rec_num, (label, qi) in enumerate(DEMO4.items(), 1):
             f'<b>GT:</b> {_html2.escape(tname)}</p>')
     panels = safe_render(i=qi)
     sec_html = f'<section id="rec{rec_num}" style="margin-bottom:60px;border-top:2px solid #d0d7de;padding-top:20px">'
-    sec_html += f'<h2 style="color:#1f2328;border-left:4px solid #54A24B;padding-left:10px">Record {rec_num} – {_html2.escape(label)}</h2>'
+    sec_html += f'<h2 style="color:#1f2328;border-left:6px solid #1b1b1b;padding-left:10px">Record {rec_num} – {_html2.escape(label)}</h2>'
     sec_html += meta
-    for title, panel in zip(_TITLES, panels):
-        if title: sec_html += f'<h3 style="color:#1f2328">{_html2.escape(title)}</h3>'
+    for k, (title, panel) in enumerate(zip(_TITLES, panels)):
+        if title: sec_html += f'<h3 style="color:{STEP_COL[k]};border-left:6px solid {STEP_COL[k]};padding-left:10px">{_html2.escape(title)}</h3>'
         sec_html += panel
     sec_html += '</section>'
     _parts_all.append(sec_html)
