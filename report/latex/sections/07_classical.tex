@@ -11,7 +11,7 @@ hand-built features of each candidate pair (S2/S3 record $q$, S1 candidate $s$),
   \item \textbf{address strings} (6): the same similarities on the address;
   \item \textbf{numbers} (4): digit strings in the two addresses (house, plot or shop numbers): Jaccard,
         count found only in $q$ or only in $s$, first number equal;
-  \item \textbf{parsed fields} (7): field-by-field comparison of the BiLSTM-CRF parses (\S\ref{sec:parsing});
+  \item \textbf{parsed fields} (7): field-by-field comparison of the BiLSTM-CRF parses (Section~\ref{sec:parsing});
   \item \textbf{retrieval} (8): \nb{03}'s TF-IDF and fine-tuned e5 cosines, their ranks, the RRF rank;
   \item \textbf{metadata} (9): script and source of $q$, empty address, text lengths.
 \end{itemize}

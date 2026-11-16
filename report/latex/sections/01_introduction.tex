@@ -19,7 +19,7 @@ which weighs precision more than recall, so a wrong link costs more than a misse
 This makes the task a good test bed for the course material. It needs tokenization that copes with
 three scripts, string similarity and edit distance, sequence labelling (address parsing), recurrent
 networks, pre-trained transformers with full and parameter-efficient fine-tuning, and Mixture-of-Experts
-models. We built one shared pipeline (\S\ref{sec:overview}) in which every matcher scores \emph{the same}
+models. We built one shared pipeline (Section~\ref{sec:overview}) in which every matcher scores \emph{the same}
 candidate pairs with \emph{the same} decision rule and threshold protocol, so that their results are
-directly comparable. The sections below follow the pipeline: data and splits (\S\ref{sec:data}), tokenization and retrieval (\S\ref{sec:tok}), parsing, the classical, recurrent and transformer matchers including Ditto (\S\ref{sec:parsing}--\ref{sec:ce}), Mixture-of-Experts fusion (\S\ref{sec:fusion}) and a per-script error analysis (\S\ref{sec:script}).
-Table~\ref{tab:main} in \S\ref{sec:fusion} collects all results.
+directly comparable. The sections below follow the pipeline: data and splits (Section~\ref{sec:data}), tokenization and retrieval (Section~\ref{sec:tok}), parsing, the classical, recurrent and transformer matchers including Ditto (Sections~\ref{sec:parsing}--\ref{sec:ce}), Mixture-of-Experts fusion (Section~\ref{sec:fusion}) and a per-script error analysis (Section~\ref{sec:script}).
+Table~\ref{tab:main} in Section~\ref{sec:fusion} collects all results.

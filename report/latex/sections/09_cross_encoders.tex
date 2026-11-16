@@ -58,12 +58,12 @@ fine-tuning of the same backbone. Its experts do not specialise by script: their
 the same in every script ($\approx$0.21 / 0.22 / 0.23 / 0.33).
 
 \paragraph{IndicBERTv2 (\nb{06e})} is the weakest fine-tuned cross-encoder (0.9761), even on Indic scripts;
-\S\ref{sec:script} compares it with bge.
+Section~\ref{sec:script} compares it with bge.
 
 \paragraph{Ditto (\nb{06g}).} We reproduce Ditto:
 \begin{itemize}
   \item records are serialised with attribute markers (\texttt{[COL] name [VAL] \dots});
-  \item \textbf{DK} (domain knowledge) adds typed address spans from our parser (\S\ref{sec:parsing}) and
+  \item \textbf{DK} (domain knowledge) adds typed address spans from our parser (Section~\ref{sec:parsing}) and
         normalised house numbers;
   \item \textbf{SU} (summarisation) keeps the highest-TF-IDF tokens instead of truncating;
   \item \textbf{DA} interpolates the encodings of a pair and an augmented copy (MixDA).

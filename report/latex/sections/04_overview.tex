@@ -38,7 +38,7 @@ from one source file, so all of them share the data loading, normalisation and e
 
 \paragraph{Normalisation.} All text goes through one shared step: Unicode NFKC, romanisation of
 non-Latin scripts, lower-casing, abbreviation expansion, and a transliteration lexicon of 316 words learned
-from the training links (\S\ref{sec:tok}). Matchers read three views of a record:
+from the training links (Section~\ref{sec:tok}). Matchers read three views of a record:
 \begin{itemize}
   \item TF-IDF and the string features read the fully normalised text;
   \item the Siamese RNNs read the normalised \texttt{name | address}, cut at 100 characters;
@@ -51,7 +51,7 @@ from the training links (\S\ref{sec:tok}). Matchers read three views of a record
 \begin{enumerate*}[label=(\roman*)]
   \item scores the same top-5 candidate pairs from \nb{03},
   \item saves its logits for the train part B, val and test pairs,
-  \item applies the decision rule of \S\ref{sec:data} with a threshold tuned on val, and
+  \item applies the decision rule of Section~\ref{sec:data} with a threshold tuned on val, and
   \item scores test once.
 \end{enumerate*}
 The training pairs are divided by a hash of the S1 entity into part A (85\%, 1,509,720 pairs), on which
