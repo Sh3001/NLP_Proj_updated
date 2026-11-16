@@ -53,6 +53,7 @@ GPU time is limited, so run the notebooks in this order. The first tier alone gi
 | [`sh3001/er-06a-output`](https://www.kaggle.com/datasets/sh3001/er-06a-output) | output of `06a_ce_bge_zeroshot`: scores, preds, results | 07, 08 |
 | [`sh3001/er-06b-output`](https://www.kaggle.com/datasets/sh3001/er-06b-output) | output of `06b_ce_bge_full_finetune`: scores, preds, fine-tuned weights, 560 MB | 07, 08 |
 | [`sh3001/er-06g-output`](https://www.kaggle.com/datasets/sh3001/er-06g-output) | output of `06g_ditto` (Ditto ablation: results, predictions, length study; the `final` run adds scores and weights for 07 and 08) | 07, 08 |
+| [`sh3001/out-06g-final`](https://www.kaggle.com/datasets/sh3001/out-06g-final) | output of `06g_ditto` with `RUN_SET = 'final'`: Ditto DK+SU+DA, 160k pairs (scores for B / val / test, fine-tuned weights fp16, 560 MB) | 07, 08 |
 | [`xenoncipher/er-06c-output`](https://www.kaggle.com/datasets/xenoncipher/er-06c-output) | output of `06c_ce_bge_lora`: scores, results, LoRA adapters | 07, 08 |
 | [`rishikharya/er-06e-output`](https://www.kaggle.com/datasets/rishikharya/er-06e-output) | output of `06e_ce_indicbert` (scores, preds, fine-tuned weights fp16), 560 MB | 07, 08 |
 | [`xenoncipher/er-06f-output`](https://www.kaggle.com/datasets/xenoncipher/er-06f-output) | output of `06f_ce_mdeberta`: scores, results, fine-tuned weights | 07, 08 |
