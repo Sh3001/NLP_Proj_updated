@@ -2040,6 +2040,13 @@ CSS = """
 .er.s4{background:#fff5f5;border:2px solid #c92a2a} .er.s5{background:#ebfbee;border:2px solid #2b8a3e}
 .er.s1 th{background:#1971c2} .er.s2 th{background:#9c36b5} .er.s3 th{background:#e67700} .er.s4 th{background:#c92a2a} .er.s5 th{background:#2b8a3e}
 .er td{background:#fff}
+.er{color-scheme:light;color:#000 !important}
+.er p,.er li,.er td,.er div,.er span,.er b,.er i,.er u,.er pre,.er h3,.er h4,.er a{color:#000 !important}
+.er th,.er th *{color:#fff !important}
+.er .muted,.er .muted *{color:#333 !important}
+.er .ok{color:#0b6e2e !important} .er .bad{color:#b02a37 !important}
+.er .unk{color:#5f0000 !important} .er .cont{color:#0b3d6b !important} .er .chg{color:#5c3b00 !important}
+.er .oov{color:#6c757d !important}
 .er .tok{display:inline-block;margin:2px;padding:1px 6px;border-radius:4px;background:#eef1f4;border:1px solid #d0d7de;
          font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px;color:#1f2328}
 .er .unk{background:#ffb4b4;border-color:#c92a2a;color:#5f0000;font-weight:600}
