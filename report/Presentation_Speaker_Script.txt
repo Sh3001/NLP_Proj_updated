@@ -1,0 +1,29 @@
+Slide 1
+Good morning. We are Group 12. Our project is business entity resolution: deciding which noisy records describe the same real business, across English, Hindi and Malayalam scripts. I will walk through the pipeline, the models we compared, and the results, and end with a short live demo.
+
+Slide 2
+The task: we have a clean reference list of businesses, S1, and two noisy sources, S2 and S3. Every noisy record must be linked to its S1 entity, or to nothing, since about a quarter have no match. The noise is abbreviations, phonetic spellings, Indic scripts, and near-duplicate branches. The metric is F0.5 per entity, so a wrong link costs more than a missed one. We use four states and split by entity, so no business appears in two splits. Thresholds are tuned on validation and test is scored once.
+
+Slide 3
+This is our pipeline. First we normalise and tokenize, then parse the address, then retrieve five candidates per record, then score each pair with up to nine matchers, and finally fuse them. The key design choice is that every matcher sees the same candidate pairs and the same decision rule, so the comparison is fair. Together this covers the course topics: tokenization, parsing, RNNs, transformers, fine-tuning and mixture of experts.
+
+Slide 4
+For tokenization we apply Unicode normalisation, romanise Indic text and expand abbreviations. A transliteration lexicon, learned from the training links, fixes phonetic spellings. Retrieval combines TF-IDF character trigrams with a fine-tuned multilingual e5 encoder, merged by reciprocal rank fusion. The result is that the true business is in the top five candidates 99.89 percent of the time on validation, and the ceiling for a perfect matcher on test is 0.99957. So matching, not retrieval, is the real problem.
+
+Slide 5
+Addresses have no gold labels, so we made silver labels from rules and trained a BiLSTM-CRF tagger. The trick is deleting commas from half the training addresses, so the model has to find field boundaries from the words. With commas, rules and the model both do well. Without commas, the rules get zero addresses exactly right and our model gets 85.5 percent. These parsed fields feed LightGBM and Ditto.
+
+Slide 6
+Next the classical and recurrent matchers. LightGBM on string distance, parsed fields and retrieval scores gets 0.9908 in under five minutes on a CPU, which is a very strong baseline. The Siamese character RNNs reach 0.9834 for LSTM, 0.9820 for GRU, and 0.9748 for the vanilla RNN. Gated cells win by about 0.009, and we measured why: in the vanilla RNN, the influence of a character 50 steps back is around ten to the minus twelve. That is the vanishing gradient, visible in the numbers.
+
+Slide 7
+Now transformers. A zero-shot reranker gets 0.9167. Fine-tuning on our pairs lifts it to 0.9912, an improvement of 0.0745. LoRA trains only 0.5 percent of the weights, uses 2.4 times less memory, and still reaches 0.9871. mDeBERTa is our best single model at 0.9940, but it must train in fp32, because in fp16 the loss became NaN. A mixture-of-experts head did not help, and the Indic-specific IndicBERT was worse than the multilingual model, even on Indic scripts.
+
+Slide 8
+Ditto is a published method: serialise records with column and value markers and fine-tune a language model, with three optimisations. Domain knowledge uses our own parser, summarisation keeps important words, and augmentation creates modified pairs. In our ablation only domain knowledge helps consistently, about plus 0.004. The table shows the full recipe helps most when labels are scarce: plus 0.013 with 2,000 pairs, shrinking to plus 0.003 at 40,000. This agrees with the original paper. The final Ditto run with 160,000 pairs gets 0.9876, still slightly below plain fine-tuning at 0.9912.
+
+Slide 9
+Here are all the models on test F0.5. The gated mixture of experts over nine matchers reaches 0.9948, versus 0.9940 for the best single model. But a constant gate gets 0.9947, so the gain comes from combining a classical model with the best cross-encoder, not from routing each pair differently. The perfect-matcher ceiling from retrieval is 0.99957, so there is little room left.
+
+Slide 10
+Now the demo: we pick one record and follow it through the five steps, normalise, parse, retrieve, score with every matcher, and fuse. In the closing summary: retrieval and fine-tuning give most of the gain, a strong classical model is only 0.003 behind the best transformer, our own parser is what makes Ditto's domain knowledge work, and fusion adds a small real gain. All code, notebooks and results are on GitHub. Thank you, we are happy to take questions.
